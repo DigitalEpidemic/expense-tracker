@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit2, Trash2, Check, X } from 'lucide-react';
+import { Edit2, Trash2, Check, X, Copy } from 'lucide-react';
 import { Expense } from '../types/expense';
 import { formatCurrency, formatDate } from '../utils/expenseUtils';
 
@@ -8,6 +8,7 @@ interface ExpenseListProps {
   onEdit: (expense: Expense) => void;
   onDelete: (id: string) => void;
   onToggleReimbursed: (id: string, reimbursed: boolean) => void;
+  onDuplicate: (expense: Expense) => void;
 }
 
 const ExpenseList: React.FC<ExpenseListProps> = ({
@@ -15,6 +16,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   onEdit,
   onDelete,
   onToggleReimbursed,
+  onDuplicate,
 }) => {
   if (expenses.length === 0) {
     return (
@@ -86,6 +88,13 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end gap-2">
                       <button
+                        onClick={() => onDuplicate(expense)}
+                        className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors duration-200"
+                        title="Duplicate expense"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => onEdit(expense)}
                         className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors duration-200"
                         title="Edit expense"
@@ -141,6 +150,13 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
             </div>
 
             <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-gray-100">
+              <button
+                onClick={() => onDuplicate(expense)}
+                className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors duration-200"
+                title="Duplicate expense"
+              >
+                <Copy className="w-4 h-4" />
+              </button>
               <button
                 onClick={() => onEdit(expense)}
                 className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors duration-200"

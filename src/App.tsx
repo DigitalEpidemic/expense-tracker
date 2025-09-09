@@ -66,6 +66,15 @@ function App() {
     }
   };
 
+  const handleDuplicate = (expense: Expense) => {
+    setEditingExpense({
+      ...expense,
+      id: '', // Clear the ID so it creates a new expense
+      reimbursed: false, // Reset reimbursed status
+    });
+    setIsFormOpen(true);
+  };
+
   const closeForm = () => {
     setIsFormOpen(false);
     setEditingExpense(null);
@@ -161,6 +170,7 @@ function App() {
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     onToggleReimbursed={toggleReimbursed}
+                    onDuplicate={handleDuplicate}
                   />
                 </div>
               </div>
@@ -172,7 +182,7 @@ function App() {
       <ExpenseForm
         isOpen={isFormOpen}
         onClose={closeForm}
-        onSubmit={editingExpense ? handleEditExpense : handleAddExpense}
+        onSubmit={editingExpense && editingExpense.id ? handleEditExpense : handleAddExpense}
         initialData={editingExpense ? {
           description: editingExpense.description,
           amount: editingExpense.amount.toString(),
@@ -180,7 +190,7 @@ function App() {
           category: editingExpense.category,
           reimbursed: editingExpense.reimbursed,
         } : undefined}
-        title={editingExpense ? 'Edit Expense' : 'Add New Expense'}
+        title={editingExpense && editingExpense.id ? 'Edit Expense' : 'Add New Expense'}
       />
 
       <Toaster position="top-right" />
