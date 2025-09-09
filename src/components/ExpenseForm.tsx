@@ -49,6 +49,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         reimbursed: false,
       });
     }
+    // Clear uploaded files when form is reset/reopened
+    setUploadedFiles([]);
   }, [initialData, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
