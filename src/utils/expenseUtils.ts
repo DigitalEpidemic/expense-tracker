@@ -1,13 +1,21 @@
-import { Expense, MonthlyGroup } from '../types/expense';
+import { Expense, MonthlyGroup } from "../types/expense";
+
+/**
+ * Creates a Date object from a YYYY-MM-DD string in local timezone
+ */
+const parseLocalDate = (dateString: string): Date => {
+  const [year, month, day] = dateString.split("-").map(Number);
+  return new Date(year, month - 1, day);
+};
 
 export const groupExpensesByMonth = (expenses: Expense[]): MonthlyGroup[] => {
   const groups: { [key: string]: Expense[] } = {};
 
   expenses.forEach((expense) => {
-    const date = new Date(expense.date);
-    const monthYear = date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
+    const date = parseLocalDate(expense.date);
+    const monthYear = date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
     });
 
     if (!groups[monthYear]) {
@@ -34,31 +42,32 @@ export const groupExpensesByMonth = (expenses: Expense[]): MonthlyGroup[] => {
 };
 
 export const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
   }).format(amount);
 };
 
 export const formatDate = (dateString: string): string => {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
+  const date = parseLocalDate(dateString);
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
   });
 };
 
 export const getExpenseCategories = (): string[] => {
   return [
-    'Food & Dining',
-    'Transportation',
-    'Shopping',
-    'Entertainment',
-    'Bills & Utilities',
-    'Healthcare',
-    'Travel',
-    'Education',
-    'Business',
-    'Other',
+    "Food & Dining",
+    "Transportation",
+    "Shopping",
+    "Entertainment",
+    "Bills & Utilities",
+    "Healthcare",
+    "Travel",
+    "Education",
+    "Business",
+    "Other",
   ];
 };
