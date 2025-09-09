@@ -1,0 +1,191 @@
+import React, { useState, useMemo } from 'react';
+import { Toaster } from 'react-hot-toast';
+import { Plus } from 'lucide-react';
+import { useAuth } from './hooks/useAuth';
+import { useExpenses } from './hooks/useExpenses';
+import { groupExpensesByMonth, formatCurrency } from './utils/expenseUtils';
+import { Expense, ExpenseFormData } from './types/expense';
+
+import AuthScreen from './components/AuthScreen';
+import Header from './components/Header';
+import ExpenseForm from './components/ExpenseForm';
+import ExpenseList from './components/ExpenseList';
+import FilterBar from './components/FilterBar';
+import SummaryCards from './components/SummaryCards';
+
+function App() {
+  const { user, loading: authLoading } = useAuth();
+  const { expenses, loading: expensesLoading, addExpense, updateExpense, deleteExpense, toggleReimbursed } = useExpenses(user?.uid || null);
+  
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [filter, setFilter] = useState<'all' | 'reimbursed' | 'pending'>('all');
+
+  const filteredExpenses = useMemo(() => {
+    return expenses.filter(expense => {
+      if (filter === 'reimbursed') return expense.reimbursed;
+      if (filter === 'pending') return !expense.reimbursed;
+      return true;
+    });
+  }, [expenses, filter]);
+
+  const monthlyGroups = useMemo(() => {
+    return groupExpensesByMonth(filteredExpenses);
+  }, [filteredExpenses]);
+
+  const totals = useMemo(() => {
+    const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+    const reimbursed = expenses
+      .filter(expense => expense.reimbursed)
+      .reduce((sum, expense) => sum + expense.amount, 0);
+    const pending = total - reimbursed;
+
+    return { total, reimbursed, pending };
+  }, [expenses]);
+
+  const handleAddExpense = async (data: ExpenseFormData) => {
+    await addExpense(data);
+    setIsFormOpen(false);
+  };
+
+  const handleEditExpense = async (data: ExpenseFormData) => {
+    if (editingExpense) {
+      await updateExpense(editingExpense.id, data);
+      setEditingExpense(null);
+    }
+  };
+
+  const handleEdit = (expense: Expense) => {
+    setEditingExpense(expense);
+    setIsFormOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this expense?')) {
+      await deleteExpense(id);
+    }
+  };
+
+  const closeForm = () => {
+    setIsFormOpen(false);
+    setEditingExpense(null);
+  };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <>
+        <AuthScreen />
+        <Toaster position="top-right" />
+      </>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Summary Cards */}
+        <div className="mb-8">
+          <SummaryCards 
+            total={totals.total}
+            reimbursed={totals.reimbursed}
+            pending={totals.pending}
+          />
+        </div>
+
+        {/* Actions and Filters */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="flex-1">
+            <FilterBar filter={filter} onFilterChange={setFilter} />
+          </div>
+          <button
+            onClick={() => setIsFormOpen(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center gap-2 font-medium"
+          >
+            <Plus className="w-5 h-5" />
+            Add Expense
+          </button>
+        </div>
+
+        {/* Expenses List */}
+        {expensesLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        ) : monthlyGroups.length === 0 ? (
+          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Plus className="w-8 h-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No expenses yet</h3>
+            <p className="text-gray-500 mb-6">Get started by adding your first expense.</p>
+            <button
+              onClick={() => setIsFormOpen(true)}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium"
+            >
+              Add Your First Expense
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {monthlyGroups.map((group) => (
+              <div key={group.monthYear} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-medium text-gray-900">{group.monthYear}</h2>
+                    <div className="flex items-center gap-4 text-sm">
+                      <span className="text-gray-600">
+                        Total: <span className="font-medium text-gray-900">{formatCurrency(group.total)}</span>
+                      </span>
+                      <span className="text-green-600">
+                        Reimbursed: <span className="font-medium">{formatCurrency(group.reimbursed)}</span>
+                      </span>
+                      <span className="text-amber-600">
+                        Pending: <span className="font-medium">{formatCurrency(group.pending)}</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <ExpenseList
+                    expenses={group.expenses}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onToggleReimbursed={toggleReimbursed}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </main>
+
+      <ExpenseForm
+        isOpen={isFormOpen}
+        onClose={closeForm}
+        onSubmit={editingExpense ? handleEditExpense : handleAddExpense}
+        initialData={editingExpense ? {
+          description: editingExpense.description,
+          amount: editingExpense.amount.toString(),
+          date: editingExpense.date,
+          category: editingExpense.category,
+          reimbursed: editingExpense.reimbursed,
+        } : undefined}
+        title={editingExpense ? 'Edit Expense' : 'Add New Expense'}
+      />
+
+      <Toaster position="top-right" />
+    </div>
+  );
+}
+
+export default App;
