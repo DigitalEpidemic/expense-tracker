@@ -1,8 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { X, Save, Upload, FileText, Loader2 } from 'lucide-react';
-import { ExpenseFormData } from '../types/expense';
-import { getExpenseCategories } from '../utils/expenseUtils';
-import { parseReceiptFile, isValidReceiptFile, formatFileSize } from '../utils/receiptParser';
+import { FileText, Loader2, Save, Upload, X } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { ExpenseFormData } from "../types/expense";
+import { getExpenseCategories } from "../utils/expenseUtils";
+import {
+  formatFileSize,
+  isValidReceiptFile,
+  parseReceiptFile,
+} from "../utils/receiptParser";
 
 interface ExpenseFormProps {
   isOpen: boolean;
@@ -20,15 +24,16 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   title,
 }) => {
   const [formData, setFormData] = useState<ExpenseFormData>({
-    description: '',
-    amount: '',
-    date: new Date().toISOString().split('T')[0],
-    category: '',
+    description: "",
+    amount: "",
+    date: new Date().toISOString().split("T")[0],
+    category: "",
     reimbursed: false,
   });
 
   const [isParsingReceipt, setIsParsingReceipt] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   const categories = getExpenseCategories();
 
@@ -37,10 +42,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       setFormData(initialData);
     } else {
       setFormData({
-        description: '',
-        amount: '',
-        date: new Date().toISOString().split('T')[0],
-        category: '',
+        description: "",
+        amount: "",
+        date: new Date().toISOString().split("T")[0],
+        category: "",
         reimbursed: false,
       });
     }
@@ -48,7 +53,11 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.description.trim() || !formData.amount || !formData.category) {
+    if (
+      !formData.description.trim() ||
+      !formData.amount ||
+      !formData.category
+    ) {
       return;
     }
     onSubmit(formData);
@@ -59,27 +68,52 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value, type } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
+      [name]:
+        type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
     }));
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
+    await processFiles(files);
+  };
+
+  const processFiles = async (files: File[]) => {
     const validFiles = files.filter(isValidReceiptFile);
-    
+
     if (validFiles.length === 0) {
-      alert('Please upload valid image files (JPG, PNG, WebP) or PDF files under 10MB.');
+      alert(
+        "Please upload valid image files (JPG, PNG, WebP) or PDF files under 10MB."
+      );
       return;
     }
 
     setUploadedFiles(validFiles);
-    
+
     // Parse the first file automatically
     if (validFiles.length > 0) {
       await parseReceipt(validFiles[0]);
     }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    await processFiles(files);
   };
 
   const parseReceipt = async (file: File) => {
@@ -87,7 +121,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     try {
       const parsedData = await parseReceiptFile(file);
       if (parsedData) {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           description: parsedData.description,
           amount: parsedData.amount,
@@ -96,15 +130,15 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         }));
       }
     } catch (error) {
-      console.error('Failed to parse receipt:', error);
-      alert('Failed to parse receipt. Please fill in the details manually.');
+      console.error("Failed to parse receipt:", error);
+      alert("Failed to parse receipt. Please fill in the details manually.");
     } finally {
       setIsParsingReceipt(false);
     }
   };
 
   const removeFile = (index: number) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+    setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   if (!isOpen) return null;
@@ -128,7 +162,16 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Upload Receipt (Optional)
             </label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-gray-400 transition-colors">
+            <div
+              className={`border-2 border-dashed rounded-lg p-4 transition-colors ${
+                isDragOver
+                  ? "border-blue-400 bg-blue-50"
+                  : "border-gray-300 hover:border-gray-400"
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
               <input
                 type="file"
                 id="receipt-upload"
@@ -142,21 +185,34 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
                 htmlFor="receipt-upload"
                 className="cursor-pointer flex flex-col items-center justify-center space-y-2"
               >
-                <Upload className="w-8 h-8 text-gray-400" />
-                <span className="text-sm text-gray-600">
-                  Click to upload receipt images or PDFs
+                <Upload
+                  className={`w-8 h-8 ${
+                    isDragOver ? "text-blue-500" : "text-gray-400"
+                  }`}
+                />
+                <span
+                  className={`text-sm ${
+                    isDragOver ? "text-blue-700" : "text-gray-600"
+                  }`}
+                >
+                  {isDragOver
+                    ? "Drop files here"
+                    : "Click to upload or drag and drop receipt images or PDFs"}
                 </span>
                 <span className="text-xs text-gray-500">
                   Supports JPG, PNG, WebP, PDF (max 10MB each)
                 </span>
               </label>
             </div>
-            
+
             {/* Uploaded Files */}
             {uploadedFiles.length > 0 && (
               <div className="mt-3 space-y-2">
                 {uploadedFiles.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                  <div
+                    key={index}
+                    className="flex items-center justify-between bg-gray-50 p-2 rounded"
+                  >
                     <div className="flex items-center space-x-2">
                       <FileText className="w-4 h-4 text-gray-500" />
                       <span className="text-sm text-gray-700">
@@ -175,7 +231,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
                 ))}
               </div>
             )}
-            
+
             {/* Parsing Status */}
             {isParsingReceipt && (
               <div className="mt-3 flex items-center space-x-2 text-blue-600">
@@ -186,7 +242,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           </div>
 
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="description"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Description
             </label>
             <input
@@ -202,7 +261,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           </div>
 
           <div>
-            <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="amount"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Amount
             </label>
             <input
@@ -220,7 +282,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           </div>
 
           <div>
-            <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="date"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Date
             </label>
             <input
@@ -235,7 +300,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           </div>
 
           <div>
-            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="category"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Category
             </label>
             <select
@@ -247,7 +315,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
               required
             >
               <option value="">Select category</option>
-              {categories.map(category => (
+              {categories.map((category) => (
                 <option key={category} value={category}>
                   {category}
                 </option>
@@ -264,7 +332,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
               onChange={handleChange}
               className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
             />
-            <label htmlFor="reimbursed" className="text-sm font-medium text-gray-700">
+            <label
+              htmlFor="reimbursed"
+              className="text-sm font-medium text-gray-700"
+            >
               Already reimbursed
             </label>
           </div>
