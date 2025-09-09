@@ -1,30 +1,37 @@
-import React, { useState, useMemo } from 'react';
-import { Toaster } from 'react-hot-toast';
-import { Plus } from 'lucide-react';
-import { useAuth } from './hooks/useAuth';
-import { useExpenses } from './hooks/useExpenses';
-import { groupExpensesByMonth, formatCurrency } from './utils/expenseUtils';
-import { Expense, ExpenseFormData } from './types/expense';
+import { Plus } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Toaster } from "react-hot-toast";
+import { useAuth } from "./hooks/useAuth";
+import { useExpenses } from "./hooks/useExpenses";
+import { Expense, ExpenseFormData } from "./types/expense";
+import { formatCurrency, groupExpensesByMonth } from "./utils/expenseUtils";
 
-import AuthScreen from './components/AuthScreen';
-import Header from './components/Header';
-import ExpenseForm from './components/ExpenseForm';
-import ExpenseList from './components/ExpenseList';
-import FilterBar from './components/FilterBar';
-import SummaryCards from './components/SummaryCards';
+import AuthScreen from "./components/AuthScreen";
+import ExpenseForm from "./components/ExpenseForm";
+import ExpenseList from "./components/ExpenseList";
+import FilterBar from "./components/FilterBar";
+import Header from "./components/Header";
+import SummaryCards from "./components/SummaryCards";
 
 function App() {
   const { user, loading: authLoading } = useAuth();
-  const { expenses, loading: expensesLoading, addExpense, updateExpense, deleteExpense, toggleReimbursed } = useExpenses(user?.uid || null);
-  
+  const {
+    expenses,
+    loading: expensesLoading,
+    addExpense,
+    updateExpense,
+    deleteExpense,
+    toggleReimbursed,
+  } = useExpenses(user?.uid || null);
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
-  const [filter, setFilter] = useState<'all' | 'reimbursed' | 'pending'>('all');
+  const [filter, setFilter] = useState<"all" | "reimbursed" | "pending">("all");
 
   const filteredExpenses = useMemo(() => {
-    return expenses.filter(expense => {
-      if (filter === 'reimbursed') return expense.reimbursed;
-      if (filter === 'pending') return !expense.reimbursed;
+    return expenses.filter((expense) => {
+      if (filter === "reimbursed") return expense.reimbursed;
+      if (filter === "pending") return !expense.reimbursed;
       return true;
     });
   }, [expenses, filter]);
@@ -36,7 +43,7 @@ function App() {
   const totals = useMemo(() => {
     const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
     const reimbursed = expenses
-      .filter(expense => expense.reimbursed)
+      .filter((expense) => expense.reimbursed)
       .reduce((sum, expense) => sum + expense.amount, 0);
     const pending = total - reimbursed;
 
@@ -61,7 +68,7 @@ function App() {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this expense?')) {
+    if (window.confirm("Are you sure you want to delete this expense?")) {
       await deleteExpense(id);
     }
   };
@@ -69,7 +76,7 @@ function App() {
   const handleDuplicate = (expense: Expense) => {
     setEditingExpense({
       ...expense,
-      id: '', // Clear the ID so it creates a new expense
+      id: "", // Clear the ID so it creates a new expense
       reimbursed: false, // Reset reimbursed status
     });
     setIsFormOpen(true);
@@ -100,11 +107,11 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Summary Cards */}
         <div className="mb-8">
-          <SummaryCards 
+          <SummaryCards
             total={totals.total}
             reimbursed={totals.reimbursed}
             pending={totals.pending}
@@ -135,31 +142,80 @@ function App() {
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Plus className="w-8 h-8 text-gray-400" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No expenses yet</h3>
-            <p className="text-gray-500 mb-6">Get started by adding your first expense.</p>
-            <button
-              onClick={() => setIsFormOpen(true)}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium"
-            >
-              Add Your First Expense
-            </button>
+            {expenses.length === 0 ? (
+              <>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No expenses yet
+                </h3>
+                <p className="text-gray-500 mb-6">
+                  Get started by adding your first expense.
+                </p>
+                <button
+                  onClick={() => setIsFormOpen(true)}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium"
+                >
+                  Add Your First Expense
+                </button>
+              </>
+            ) : filter === "reimbursed" ? (
+              <>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No reimbursed expenses
+                </h3>
+                <p className="text-gray-500">
+                  You haven't marked any expenses as reimbursed yet.
+                </p>
+              </>
+            ) : filter === "pending" ? (
+              <>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No pending expenses
+                </h3>
+                <p className="text-gray-500">
+                  All your expenses have been reimbursed!
+                </p>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No expenses found
+                </h3>
+                <p className="text-gray-500">
+                  No expenses match the current filter.
+                </p>
+              </>
+            )}
           </div>
         ) : (
           <div className="space-y-8">
             {monthlyGroups.map((group) => (
-              <div key={group.monthYear} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <div
+                key={group.monthYear}
+                className="bg-white rounded-lg border border-gray-200 overflow-hidden"
+              >
                 <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-medium text-gray-900">{group.monthYear}</h2>
+                    <h2 className="text-lg font-medium text-gray-900">
+                      {group.monthYear}
+                    </h2>
                     <div className="flex items-center gap-4 text-sm">
                       <span className="text-gray-600">
-                        Total: <span className="font-medium text-gray-900">{formatCurrency(group.total)}</span>
+                        Total:{" "}
+                        <span className="font-medium text-gray-900">
+                          {formatCurrency(group.total)}
+                        </span>
                       </span>
                       <span className="text-green-600">
-                        Reimbursed: <span className="font-medium">{formatCurrency(group.reimbursed)}</span>
+                        Reimbursed:{" "}
+                        <span className="font-medium">
+                          {formatCurrency(group.reimbursed)}
+                        </span>
                       </span>
                       <span className="text-amber-600">
-                        Pending: <span className="font-medium">{formatCurrency(group.pending)}</span>
+                        Pending:{" "}
+                        <span className="font-medium">
+                          {formatCurrency(group.pending)}
+                        </span>
                       </span>
                     </div>
                   </div>
@@ -182,15 +238,27 @@ function App() {
       <ExpenseForm
         isOpen={isFormOpen}
         onClose={closeForm}
-        onSubmit={editingExpense && editingExpense.id ? handleEditExpense : handleAddExpense}
-        initialData={editingExpense ? {
-          description: editingExpense.description,
-          amount: editingExpense.amount.toString(),
-          date: editingExpense.date,
-          category: editingExpense.category,
-          reimbursed: editingExpense.reimbursed,
-        } : undefined}
-        title={editingExpense && editingExpense.id ? 'Edit Expense' : 'Add New Expense'}
+        onSubmit={
+          editingExpense && editingExpense.id
+            ? handleEditExpense
+            : handleAddExpense
+        }
+        initialData={
+          editingExpense
+            ? {
+                description: editingExpense.description,
+                amount: editingExpense.amount.toString(),
+                date: editingExpense.date,
+                category: editingExpense.category,
+                reimbursed: editingExpense.reimbursed,
+              }
+            : undefined
+        }
+        title={
+          editingExpense && editingExpense.id
+            ? "Edit Expense"
+            : "Add New Expense"
+        }
       />
 
       <Toaster position="top-right" />
