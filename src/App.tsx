@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Toaster } from "react-hot-toast";
 import { useAuth } from "./hooks/useAuth";
 import { useExpenses } from "./hooks/useExpenses";
+import { useIsDesktop } from "./hooks/useMediaQuery";
 import { Expense, ExpenseFormData } from "./types/expense";
 import { formatCurrency, groupExpensesByMonth } from "./utils/expenseUtils";
 
@@ -23,6 +24,7 @@ function App() {
     deleteExpense,
     toggleReimbursed,
   } = useExpenses(user?.uid || null);
+  const isDesktop = useIsDesktop();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -211,49 +213,74 @@ function App() {
                 key={group.monthYear}
                 className="bg-white rounded-lg border border-gray-200 overflow-hidden"
               >
-                <div className="bg-gray-50 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
-                    <h2 className="text-lg font-medium text-gray-900">
-                      {group.monthYear}
-                    </h2>
-                    <div className="grid grid-cols-3 sm:flex sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm sm:text-sm">
-                      <div className="text-center sm:text-left">
-                        <div className="text-gray-500 text-xs sm:hidden">
-                          Total
+                <div
+                  className={`bg-gray-50 border-b border-gray-200 ${
+                    isDesktop ? "px-6 py-4" : "px-4 py-3"
+                  }`}
+                >
+                  {isDesktop ? (
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-lg font-medium text-gray-900">
+                        {group.monthYear}
+                      </h2>
+                      <div className="flex items-center gap-4 text-sm">
+                        <div className="text-left">
+                          <div className="font-medium text-gray-900">
+                            <span className="text-gray-600 font-normal">
+                              Total:{" "}
+                            </span>
+                            {formatCurrency(group.total)}
+                          </div>
                         </div>
-                        <div className="font-bold sm:font-medium text-gray-900 text-sm sm:text-sm">
-                          <span className="hidden sm:inline text-gray-600 font-normal">
-                            Total:{" "}
-                          </span>
-                          {formatCurrency(group.total)}
+                        <div className="text-left">
+                          <div className="font-medium text-green-600">
+                            <span className="text-green-600 font-normal">
+                              Reimbursed:{" "}
+                            </span>
+                            {formatCurrency(group.reimbursed)}
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-center sm:text-left">
-                        <div className="text-gray-500 text-xs sm:hidden">
-                          Reimbursed
-                        </div>
-                        <div className="font-bold sm:font-medium text-green-600 text-sm sm:text-sm">
-                          <span className="hidden sm:inline text-green-600 font-normal">
-                            Reimbursed:{" "}
-                          </span>
-                          {formatCurrency(group.reimbursed)}
-                        </div>
-                      </div>
-                      <div className="text-center sm:text-left">
-                        <div className="text-gray-500 text-xs sm:hidden">
-                          Pending
-                        </div>
-                        <div className="font-bold sm:font-medium text-amber-600 text-sm sm:text-sm">
-                          <span className="hidden sm:inline text-amber-600 font-normal">
-                            Pending:{" "}
-                          </span>
-                          {formatCurrency(group.pending)}
+                        <div className="text-left">
+                          <div className="font-medium text-amber-600">
+                            <span className="text-amber-600 font-normal">
+                              Pending:{" "}
+                            </span>
+                            {formatCurrency(group.pending)}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      <h2 className="text-lg font-medium text-gray-900">
+                        {group.monthYear}
+                      </h2>
+                      <div className="grid grid-cols-3 gap-2 text-sm">
+                        <div className="text-center">
+                          <div className="text-gray-500 text-xs">Total</div>
+                          <div className="font-bold text-gray-900">
+                            {formatCurrency(group.total)}
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-gray-500 text-xs">
+                            Reimbursed
+                          </div>
+                          <div className="font-bold text-green-600">
+                            {formatCurrency(group.reimbursed)}
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-gray-500 text-xs">Pending</div>
+                          <div className="font-bold text-amber-600">
+                            {formatCurrency(group.pending)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="p-4 sm:p-6">
+                <div className={isDesktop ? "p-6" : "p-4"}>
                   <ExpenseList
                     expenses={group.expenses}
                     onEdit={handleEdit}

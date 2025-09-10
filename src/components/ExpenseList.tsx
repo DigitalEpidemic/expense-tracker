@@ -1,5 +1,6 @@
 import { Check, Copy, Edit2, Trash2, X } from "lucide-react";
 import React from "react";
+import { useIsDesktop } from "../hooks/useMediaQuery";
 import { Expense } from "../types/expense";
 import { formatCurrency, formatDate } from "../utils/expenseUtils";
 
@@ -18,6 +19,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   onToggleReimbursed,
   onDuplicate,
 }) => {
+  const isDesktop = useIsDesktop();
+
   if (expenses.length === 0) {
     return (
       <div className="text-center py-12 text-gray-500">
@@ -28,8 +31,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 
   return (
     <div className="space-y-3">
-      {/* Desktop Table */}
-      <div className="hidden md:block">
+      {isDesktop ? (
+        // Desktop Table
         <div className="overflow-hidden bg-white rounded-lg border border-gray-200">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -120,84 +123,86 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
             </tbody>
           </table>
         </div>
-      </div>
-
-      {/* Mobile Cards */}
-      <div className="md:hidden space-y-3">
-        {expenses.map((expense) => (
-          <div
-            key={expense.id}
-            className="bg-white rounded-lg border border-gray-200 p-3"
-          >
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex-1">
-                <h3 className="font-medium text-gray-900 mb-1">
-                  {expense.description}
-                </h3>
-                <p className="text-sm text-gray-500">{expense.category}</p>
+      ) : (
+        // Mobile Cards
+        <div className="space-y-3">
+          {expenses.map((expense) => (
+            <div
+              key={expense.id}
+              className="bg-white rounded-lg border border-gray-200 p-3"
+            >
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex-1">
+                  <h3 className="font-medium text-gray-900 mb-1">
+                    {expense.description}
+                  </h3>
+                  <p className="text-sm text-gray-500">{expense.category}</p>
+                </div>
+                <div className="flex items-center gap-2 ml-2">
+                  <button
+                    onClick={() =>
+                      onToggleReimbursed(expense.id, !expense.reimbursed)
+                    }
+                    className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors duration-200 ${
+                      expense.reimbursed
+                        ? "bg-green-100 text-green-700 hover:bg-green-200"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    {expense.reimbursed ? (
+                      <>
+                        <Check className="w-3 h-3" />
+                        <span>Reimbursed</span>
+                      </>
+                    ) : (
+                      <>
+                        <X className="w-3 h-3" />
+                        <span>Pending</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-2 ml-2">
-                <button
-                  onClick={() =>
-                    onToggleReimbursed(expense.id, !expense.reimbursed)
-                  }
-                  className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors duration-200 ${
-                    expense.reimbursed
-                      ? "bg-green-100 text-green-700 hover:bg-green-200"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
-                >
-                  {expense.reimbursed ? (
-                    <>
-                      <Check className="w-3 h-3" />
-                      <span>Reimbursed</span>
-                    </>
-                  ) : (
-                    <>
-                      <X className="w-3 h-3" />
-                      <span>Pending</span>
-                    </>
-                  )}
-                </button>
+
+              <div className="flex items-center justify-between text-sm mb-2">
+                <span className="text-gray-500">
+                  {formatDate(expense.date)}
+                </span>
+                <span className="font-bold text-gray-900 text-base">
+                  {formatCurrency(expense.amount)}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-gray-100">
+                <div className="text-xs text-gray-500">Actions:</div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => onDuplicate(expense)}
+                    className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-green-600 bg-green-50 hover:bg-green-100 rounded transition-colors duration-200"
+                  >
+                    <Copy className="w-3 h-3" />
+                    <span>Copy</span>
+                  </button>
+                  <button
+                    onClick={() => onEdit(expense)}
+                    className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded transition-colors duration-200"
+                  >
+                    <Edit2 className="w-3 h-3" />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    onClick={() => onDelete(expense.id)}
+                    className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors duration-200"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span>Delete</span>
+                  </button>
+                </div>
               </div>
             </div>
-
-            <div className="flex items-center justify-between text-sm mb-2">
-              <span className="text-gray-500">{formatDate(expense.date)}</span>
-              <span className="font-bold text-gray-900 text-base">
-                {formatCurrency(expense.amount)}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between gap-2 pt-2 border-t border-gray-100">
-              <div className="text-xs text-gray-500">Actions:</div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => onDuplicate(expense)}
-                  className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-green-600 bg-green-50 hover:bg-green-100 rounded transition-colors duration-200"
-                >
-                  <Copy className="w-3 h-3" />
-                  <span>Copy</span>
-                </button>
-                <button
-                  onClick={() => onEdit(expense)}
-                  className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded transition-colors duration-200"
-                >
-                  <Edit2 className="w-3 h-3" />
-                  <span>Edit</span>
-                </button>
-                <button
-                  onClick={() => onDelete(expense.id)}
-                  className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors duration-200"
-                >
-                  <Trash2 className="w-3 h-3" />
-                  <span>Delete</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

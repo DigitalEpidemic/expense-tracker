@@ -1,8 +1,14 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { vi } from "vitest";
+import { Mock, vi } from "vitest";
+import { useIsDesktop } from "../hooks/useMediaQuery";
 import { Expense } from "../types/expense";
 import ExpenseList from "./ExpenseList";
+
+// Mock the useMediaQuery hook
+vi.mock("../hooks/useMediaQuery");
+
+const mockUseIsDesktop = useIsDesktop as Mock;
 
 const mockExpenses: Expense[] = [
   {
@@ -48,6 +54,8 @@ const defaultProps = {
 describe("ExpenseList", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default to desktop view for most tests
+    mockUseIsDesktop.mockReturnValue(true);
   });
 
   it("shows empty state when no expenses", () => {
@@ -59,30 +67,18 @@ describe("ExpenseList", () => {
   });
 
   it("renders desktop table on desktop view", () => {
-    // Mock window.matchMedia to simulate desktop
-    Object.defineProperty(window, "matchMedia", {
-      writable: true,
-      value: vi.fn().mockImplementation((query) => ({
-        matches: query !== "(max-width: 767px)",
-        media: query,
-        onchange: null,
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-      })),
-    });
+    // Mock desktop view
+    mockUseIsDesktop.mockReturnValue(true);
 
     render(<ExpenseList {...defaultProps} />);
 
     // Check for table headers (desktop only)
-    expect(screen.getAllByText("Date")).toHaveLength(1);
-    expect(screen.getAllByText("Description")).toHaveLength(1);
-    expect(screen.getAllByText("Category")).toHaveLength(1);
-    expect(screen.getAllByText("Amount")).toHaveLength(1);
-    expect(screen.getAllByText("Reimbursed").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("Actions")).toHaveLength(1);
+    expect(screen.getByText("Date")).toBeInTheDocument();
+    expect(screen.getByText("Description")).toBeInTheDocument();
+    expect(screen.getByText("Category")).toBeInTheDocument();
+    expect(screen.getByText("Amount")).toBeInTheDocument();
+    expect(screen.getByText("Reimbursed")).toBeInTheDocument();
+    expect(screen.getByText("Actions")).toBeInTheDocument();
   });
 
   it("displays all expenses with correct data", () => {
@@ -201,20 +197,8 @@ describe("ExpenseList", () => {
   });
 
   it("renders mobile cards on mobile view", () => {
-    // Mock window.matchMedia to simulate mobile
-    Object.defineProperty(window, "matchMedia", {
-      writable: true,
-      value: vi.fn().mockImplementation((query) => ({
-        matches: query === "(max-width: 767px)",
-        media: query,
-        onchange: null,
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-      })),
-    });
+    // Mock mobile view
+    mockUseIsDesktop.mockReturnValue(false);
 
     render(<ExpenseList {...defaultProps} />);
 
@@ -230,19 +214,7 @@ describe("ExpenseList", () => {
 
   it("handles mobile reimbursement toggle correctly", async () => {
     // Mock mobile view
-    Object.defineProperty(window, "matchMedia", {
-      writable: true,
-      value: vi.fn().mockImplementation((query) => ({
-        matches: query === "(max-width: 767px)",
-        media: query,
-        onchange: null,
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-      })),
-    });
+    mockUseIsDesktop.mockReturnValue(false);
 
     const onToggleReimbursed = vi.fn();
     const user = userEvent.setup();
@@ -272,19 +244,7 @@ describe("ExpenseList", () => {
 
   it("handles mobile action buttons correctly", async () => {
     // Mock mobile view
-    Object.defineProperty(window, "matchMedia", {
-      writable: true,
-      value: vi.fn().mockImplementation((query) => ({
-        matches: query === "(max-width: 767px)",
-        media: query,
-        onchange: null,
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-      })),
-    });
+    mockUseIsDesktop.mockReturnValue(false);
 
     const onEdit = vi.fn();
     const onDelete = vi.fn();

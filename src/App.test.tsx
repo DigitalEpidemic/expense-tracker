@@ -3,10 +3,12 @@ import { Mock, vi } from "vitest";
 import App from "./App";
 import { useAuth } from "./hooks/useAuth";
 import { useExpenses } from "./hooks/useExpenses";
+import { useIsDesktop } from "./hooks/useMediaQuery";
 
 // Mock the hooks
 vi.mock("./hooks/useAuth");
 vi.mock("./hooks/useExpenses");
+vi.mock("./hooks/useMediaQuery");
 
 // Mock react-hot-toast
 vi.mock("react-hot-toast", () => ({
@@ -15,6 +17,7 @@ vi.mock("react-hot-toast", () => ({
 
 const mockUseAuth = useAuth as Mock;
 const mockUseExpenses = useExpenses as Mock;
+const mockUseIsDesktop = useIsDesktop as Mock;
 
 const mockExpenses = [
   {
@@ -42,6 +45,8 @@ const mockExpenses = [
 describe("App", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default to desktop view for most tests
+    mockUseIsDesktop.mockReturnValue(true);
   });
 
   it("shows loading spinner when auth is loading", () => {
