@@ -49,3 +49,42 @@ vi.mock("pdfjs-dist", () => ({
     workerSrc: "",
   },
 }));
+
+// Suppress console logs during tests to reduce noise
+const originalConsoleLog = console.log;
+const originalConsoleError = console.error;
+
+console.log = (...args: any[]) => {
+  const message = args.join(" ");
+  // Only suppress specific receiptParser logs during tests
+  if (
+    message.includes("Image parsing not yet implemented") ||
+    message.includes("PDF loaded successfully") ||
+    message.includes("Page 1 text:") ||
+    message.includes("Full extracted text:") ||
+    message.includes("Parsing UberEats text:") ||
+    message.includes("Found amount:") ||
+    message.includes("Found restaurant") ||
+    message.includes("Found date:") ||
+    message.includes("Successfully parsed receipt:")
+  ) {
+    return;
+  }
+  originalConsoleLog(...args);
+};
+
+console.error = (...args: any[]) => {
+  const message = args.join(" ");
+  // Keep intentional test error logs from showing in stderr (these are expected)
+  if (
+    message.includes("Error parsing PDF with PDF.js:") ||
+    message.includes("Error adding expense:") ||
+    message.includes("Error updating expense:") ||
+    message.includes("Error deleting expense:") ||
+    message.includes("Sign in error:") ||
+    message.includes("Sign out error:")
+  ) {
+    return;
+  }
+  originalConsoleError(...args);
+};

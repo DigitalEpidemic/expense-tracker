@@ -1,5 +1,4 @@
-import { waitFor } from "@testing-library/react";
-import { act, renderHook } from "@testing-library/react-hooks";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import * as firebaseAuth from "firebase/auth";
 import toast from "react-hot-toast";
 import { beforeEach, describe, expect, it, vi } from "vitest";
