@@ -293,4 +293,71 @@ describe("useExpenses", () => {
     expect(mockUnsubscribe).toHaveBeenCalled();
     expect(firestore.onSnapshot).toHaveBeenCalledTimes(2);
   });
+
+  it("should handle missing or invalid createdAt and updatedAt timestamps", async () => {
+    const mockUnsubscribe = vi.fn();
+
+    // Mock expense data with missing/invalid timestamps to test fallback (lines 42-43)
+    const expenseWithMissingTimestamps = [
+      {
+        id: "1",
+        description: "Test Expense",
+        amount: 10.0,
+        date: "2024-01-15",
+        category: "Food & Dining",
+        reimbursed: false,
+        userId: "user1",
+        // createdAt and updatedAt are missing/null to trigger fallback
+        createdAt: null,
+        updatedAt: undefined,
+      },
+      {
+        id: "2",
+        description: "Another Expense",
+        amount: 15.0,
+        date: "2024-01-16",
+        category: "Transportation",
+        reimbursed: true,
+        userId: "user1",
+        // createdAt with toDate that returns null and updatedAt with toDate that returns null
+        createdAt: { toDate: () => null }, // Will fallback to new Date()
+        updatedAt: { toDate: () => null }, // Will fallback to new Date()
+      },
+    ];
+
+    const mockSnapshot = {
+      forEach: vi.fn((callback) => {
+        expenseWithMissingTimestamps.forEach((expense) => {
+          callback({
+            id: expense.id,
+            data: () => expense,
+          });
+        });
+      }),
+    };
+
+    vi.mocked(firestore.onSnapshot).mockImplementation((query, callback) => {
+      callback(mockSnapshot);
+      return mockUnsubscribe;
+    });
+
+    const { result } = renderHook(() => useExpenses("user1"));
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    // Should have processed both expenses with fallback timestamps
+    expect(result.current.expenses).toHaveLength(2);
+
+    // First expense should use fallback Date() for both timestamps (lines 42-43)
+    const expense1 = result.current.expenses[0];
+    expect(expense1.createdAt).toBeInstanceOf(Date);
+    expect(expense1.updatedAt).toBeInstanceOf(Date);
+
+    // Second expense should use fallback for both timestamps (lines 42-43)
+    const expense2 = result.current.expenses[1];
+    expect(expense2.createdAt).toBeInstanceOf(Date);
+    expect(expense2.updatedAt).toBeInstanceOf(Date);
+  });
 });

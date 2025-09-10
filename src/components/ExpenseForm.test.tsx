@@ -440,4 +440,89 @@ describe("ExpenseForm", () => {
     // Check that the component handles these events without errors
     expect(dropArea).toBeInTheDocument();
   });
+
+  it("uses handleMultiFormChange for form fields when multiple files are uploaded", async () => {
+    const onSubmit = vi.fn();
+    render(<ExpenseForm {...defaultProps} onSubmit={onSubmit} />);
+
+    // Mock parsed data for multiple files
+    mockParseReceiptFile.mockResolvedValueOnce({
+      description: "Coffee Shop A",
+      amount: "5.99",
+      category: "Food & Dining",
+      date: "2024-01-15",
+      confidence: 0.9,
+    });
+    mockParseReceiptFile.mockResolvedValueOnce({
+      description: "Restaurant B",
+      amount: "25.50",
+      category: "Food & Dining",
+      date: "2024-01-15",
+      confidence: 0.85,
+    });
+
+    // Create multiple files
+    const file1 = new File(["receipt1"], "receipt1.pdf", {
+      type: "application/pdf",
+    });
+    const file2 = new File(["receipt2"], "receipt2.pdf", {
+      type: "application/pdf",
+    });
+
+    // Upload multiple files to trigger multi-form mode
+    const fileInput = document.getElementById(
+      "receipt-upload"
+    ) as HTMLInputElement;
+
+    fireEvent.change(fileInput, {
+      target: { files: [file1, file2] },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Save All (2)")).toBeInTheDocument();
+    });
+
+    // Now test the multi-form change handlers by modifying form fields
+    // This should trigger handleMultiFormChange instead of handleChange (lines 418, 435, 458)
+
+    // Test date field change (line 418-419)
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    fireEvent.change(dateInputs[0], { target: { value: "2024-01-20" } });
+
+    // Test category field change (line 434-435)
+    const categorySelects = document.querySelectorAll(
+      'select[name="category"]'
+    );
+    fireEvent.change(categorySelects[0], {
+      target: { value: "Transportation" },
+    });
+
+    // Test reimbursed checkbox change (line 457-459)
+    const reimbursedCheckboxes = document.querySelectorAll(
+      'input[name="reimbursed"]'
+    );
+    fireEvent.click(reimbursedCheckboxes[0]);
+
+    // Submit the form
+    const saveButton = screen.getByText("Save All (2)");
+    await userEvent.click(saveButton);
+
+    // Verify that the first form data was updated correctly via handleMultiFormChange
+    expect(onSubmit).toHaveBeenCalledWith([
+      expect.objectContaining({
+        description: "Coffee Shop A",
+        amount: "5.99",
+        date: "2024-01-20", // Updated via handleMultiFormChange
+        category: "Transportation", // Updated via handleMultiFormChange
+        reimbursed: true, // Updated via handleMultiFormChange
+      }),
+      expect.objectContaining({
+        description: "Restaurant B",
+        amount: "25.50",
+        category: "Food & Dining", // Second form unchanged
+        date: "2024-01-15",
+        reimbursed: false,
+      }),
+    ]);
+  });
 });

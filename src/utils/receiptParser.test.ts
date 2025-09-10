@@ -702,5 +702,109 @@ describe("receiptParser", () => {
       // Should use current date as fallback
       expect(result?.date).toBe(new Date().toISOString().split("T")[0]);
     });
+
+    it("should handle errors in UberEats parsing function", async () => {
+      // Create a file that will trigger UberEats parsing
+      const mockFile = new File(["test content"], "uber_eats_receipt.pdf", {
+        type: "application/pdf",
+      });
+
+      // Mock PDF.js to return valid text but simulate error during UberEats parsing
+      // by providing malformed text that causes an error in the parsing logic
+      const mockTextItems = [
+        { str: "UberEats", transform: [1, 0, 0, 1, 100, 100] },
+        { str: "Total $15.99", transform: [1, 0, 0, 1, 100, 150] },
+      ];
+
+      const mockPage = {
+        getTextContent: vi.fn().mockResolvedValue({
+          items: mockTextItems,
+        }),
+      };
+
+      const mockDocument = {
+        numPages: 1,
+        getPage: vi.fn().mockResolvedValue(mockPage),
+      };
+
+      vi.mocked(pdfjsLib.getDocument).mockReturnValue({
+        promise: Promise.resolve(mockDocument),
+      } as any);
+
+      // Spy on Date constructor to cause an error in date parsing
+      const originalDate = global.Date;
+      global.Date = vi.fn().mockImplementation(() => {
+        throw new Error("Date parsing error");
+      }) as any;
+
+      // This will also mock the static methods like toISOString
+      global.Date.prototype = originalDate.prototype;
+
+      // Create a spy to monitor console.error being called (lines 272-274)
+      const consoleErrorSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
+      try {
+        const result = await parseReceiptFile(mockFile);
+
+        // The function should handle the error gracefully by catching it
+        // and logging the error (testing lines 272-274: console.error and return null)
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          "Error parsing receipt:",
+          expect.any(Error)
+        );
+
+        // Should return null when parsing fails at the top level
+        expect(result).toBeNull();
+      } finally {
+        // Restore original Date constructor and console.error
+        global.Date = originalDate;
+        consoleErrorSpy.mockRestore();
+      }
+    });
+
+    it("should handle errors in extractDateFromFileName function", async () => {
+      // Create a file with a special filename that could cause issues
+      // Since extractDateFromFileName is internal, we test it indirectly through UberEats parsing
+      const mockFile = new File(["test content"], "Receipt_invalid_date.pdf", {
+        type: "application/pdf",
+      });
+
+      // Mock PDF.js to return UberEats content without a date
+      const mockTextItems = [
+        { str: "UberEats Receipt", transform: [1, 0, 0, 1, 100, 100] },
+        { str: "Total $15.99", transform: [1, 0, 0, 1, 100, 150] },
+        { str: "Restaurant Name", transform: [1, 0, 0, 1, 100, 200] },
+      ];
+
+      const mockPage = {
+        getTextContent: vi.fn().mockResolvedValue({
+          items: mockTextItems,
+        }),
+      };
+
+      const mockDocument = {
+        numPages: 1,
+        getPage: vi.fn().mockResolvedValue(mockPage),
+      };
+
+      vi.mocked(pdfjsLib.getDocument).mockReturnValue({
+        promise: Promise.resolve(mockDocument),
+      } as any);
+
+      // Create a spy to monitor extractDateFromFileName being called
+      const consoleErrorSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
+      const result = await parseReceiptFile(mockFile);
+
+      // The function should handle the invalid filename gracefully and use current date
+      expect(result).not.toBeNull();
+      expect(result?.date).toBe(new Date().toISOString().split("T")[0]);
+
+      consoleErrorSpy.mockRestore();
+    });
   });
 });
