@@ -85,7 +85,8 @@ console.error = (...args: any[]) => {
     message.includes("Error updating expense:") ||
     message.includes("Error deleting expense:") ||
     message.includes("Sign in error:") ||
-    message.includes("Sign out error:")
+    message.includes("Sign out error:") ||
+    message.includes("Failed to parse receipt:")
   ) {
     return;
   }

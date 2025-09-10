@@ -218,4 +218,226 @@ describe("ExpenseForm", () => {
       expect(mockParseReceiptFile).toHaveBeenCalledWith(file);
     });
   });
+
+  it("prevents form submission when required fields are empty", async () => {
+    const onSubmit = vi.fn();
+    const user = userEvent.setup();
+
+    render(<ExpenseForm {...defaultProps} onSubmit={onSubmit} />);
+
+    await user.click(screen.getByText("Save"));
+
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("handles multiple file uploads", async () => {
+    mockParseReceiptFile.mockResolvedValue({
+      description: "Restaurant ABC",
+      amount: "15.99",
+      date: "2024-01-15",
+      category: "Food & Dining",
+      confidence: 0.9,
+    });
+
+    render(<ExpenseForm {...defaultProps} />);
+
+    const file1 = new File(["receipt1"], "receipt1.pdf", {
+      type: "application/pdf",
+    });
+    const file2 = new File(["receipt2"], "receipt2.pdf", {
+      type: "application/pdf",
+    });
+    const fileInput = document.getElementById(
+      "receipt-upload"
+    ) as HTMLInputElement;
+
+    fireEvent.change(fileInput, {
+      target: { files: [file1, file2] },
+    });
+
+    await waitFor(() => {
+      expect(mockParseReceiptFile).toHaveBeenCalledWith(file1);
+      expect(mockParseReceiptFile).toHaveBeenCalledWith(file2);
+    });
+  });
+
+  it("handles duplicate file uploads", async () => {
+    vi.clearAllMocks();
+    mockIsValidReceiptFile.mockReturnValue(true);
+
+    render(<ExpenseForm {...defaultProps} />);
+
+    const file1 = new File(["receipt"], "receipt.pdf", {
+      type: "application/pdf",
+    });
+
+    // Set lastModified to ensure exact duplicate
+    Object.defineProperty(file1, "lastModified", { value: 1234567890 });
+
+    const fileInput = document.getElementById(
+      "receipt-upload"
+    ) as HTMLInputElement;
+
+    // Upload file first time
+    fireEvent.change(fileInput, {
+      target: { files: [file1] },
+    });
+
+    await waitFor(() => {
+      expect(mockParseReceiptFile).toHaveBeenCalledWith(file1);
+    });
+
+    // Try to upload same file again
+    const duplicateFile = new File(["receipt"], "receipt.pdf", {
+      type: "application/pdf",
+    });
+    Object.defineProperty(duplicateFile, "lastModified", { value: 1234567890 });
+
+    fireEvent.change(fileInput, {
+      target: { files: [duplicateFile] },
+    });
+
+    await waitFor(() => {
+      expect(mockToast.error).toHaveBeenCalledWith(
+        "All selected files have already been uploaded."
+      );
+    });
+  });
+
+  it("shows message when some files are duplicates", async () => {
+    vi.clearAllMocks();
+    mockIsValidReceiptFile.mockReturnValue(true);
+    mockParseReceiptFile.mockResolvedValue({
+      description: "Restaurant ABC",
+      amount: "15.99",
+      date: "2024-01-15",
+      category: "Food & Dining",
+      confidence: 0.9,
+    });
+
+    render(<ExpenseForm {...defaultProps} />);
+
+    const file1 = new File(["receipt1"], "receipt1.pdf", {
+      type: "application/pdf",
+    });
+    Object.defineProperty(file1, "lastModified", { value: 1234567890 });
+
+    const fileInput = document.getElementById(
+      "receipt-upload"
+    ) as HTMLInputElement;
+
+    // Upload first file
+    fireEvent.change(fileInput, {
+      target: { files: [file1] },
+    });
+
+    await waitFor(() => {
+      expect(mockParseReceiptFile).toHaveBeenCalledWith(file1);
+    });
+
+    // Upload mix of duplicate and new files
+    const duplicateFile = new File(["receipt1"], "receipt1.pdf", {
+      type: "application/pdf",
+    });
+    Object.defineProperty(duplicateFile, "lastModified", { value: 1234567890 });
+
+    const newFile = new File(["receipt2"], "receipt2.pdf", {
+      type: "application/pdf",
+    });
+
+    fireEvent.change(fileInput, {
+      target: { files: [duplicateFile, newFile] },
+    });
+
+    await waitFor(() => {
+      expect(mockToast.success).toHaveBeenCalledWith(
+        "1 duplicate file was skipped. Only new files will be added."
+      );
+    });
+  });
+
+  it("handles receipt parsing errors", async () => {
+    mockParseReceiptFile.mockRejectedValue(new Error("Parsing failed"));
+
+    render(<ExpenseForm {...defaultProps} />);
+
+    const file = new File(["receipt"], "receipt.pdf", {
+      type: "application/pdf",
+    });
+    const fileInput = document.getElementById(
+      "receipt-upload"
+    ) as HTMLInputElement;
+
+    fireEvent.change(fileInput, {
+      target: { files: [file] },
+    });
+
+    await waitFor(() => {
+      expect(mockToast.error).toHaveBeenCalledWith(
+        "Failed to parse receipt. Please fill in the details manually."
+      );
+    });
+  });
+
+  it("handles form submission with multiple files", async () => {
+    const onSubmit = vi.fn();
+    mockParseReceiptFile.mockResolvedValue({
+      description: "Restaurant ABC",
+      amount: "15.99",
+      date: "2024-01-15",
+      category: "Food & Dining",
+      confidence: 0.9,
+    });
+
+    render(<ExpenseForm {...defaultProps} onSubmit={onSubmit} />);
+
+    const file1 = new File(["receipt1"], "receipt1.pdf", {
+      type: "application/pdf",
+    });
+    const file2 = new File(["receipt2"], "receipt2.pdf", {
+      type: "application/pdf",
+    });
+    const fileInput = document.getElementById(
+      "receipt-upload"
+    ) as HTMLInputElement;
+
+    fireEvent.change(fileInput, {
+      target: { files: [file1, file2] },
+    });
+
+    await waitFor(() => {
+      expect(mockParseReceiptFile).toHaveBeenCalledWith(file1);
+      expect(mockParseReceiptFile).toHaveBeenCalledWith(file2);
+    });
+
+    const saveButton = screen.getByText("Save All (2)");
+    await userEvent.click(saveButton);
+
+    expect(onSubmit).toHaveBeenCalledWith([
+      expect.objectContaining({
+        description: "Restaurant ABC",
+        amount: "15.99",
+        category: "Food & Dining",
+      }),
+      expect.objectContaining({
+        description: "Restaurant ABC",
+        amount: "15.99",
+        category: "Food & Dining",
+      }),
+    ]);
+  });
+
+  it("handles drag over and drag leave events", async () => {
+    render(<ExpenseForm {...defaultProps} />);
+
+    const dropArea = screen.getByText(
+      /click to upload or drag and drop/i
+    ).parentElement;
+
+    fireEvent.dragOver(dropArea!);
+    fireEvent.dragLeave(dropArea!);
+
+    // Check that the component handles these events without errors
+    expect(dropArea).toBeInTheDocument();
+  });
 });

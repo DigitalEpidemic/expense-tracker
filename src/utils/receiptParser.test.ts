@@ -592,4 +592,115 @@ describe("receiptParser", () => {
       expect(formatFileSize(1234567)).toBe("1.18 MB");
     });
   });
+
+  describe("error handling", () => {
+    it("should handle errors in parseReceiptFile for non-PDF files", async () => {
+      const mockFile = new File(["test"], "test.txt", { type: "text/plain" });
+
+      const result = await parseReceiptFile(mockFile);
+      expect(result).toBeNull();
+    });
+
+    it("should handle date parsing errors gracefully", async () => {
+      const mockFile = new File(["test"], "test.pdf", {
+        type: "application/pdf",
+      });
+      const mockPage = {
+        getTextContent: vi.fn().mockResolvedValue({
+          items: [
+            { str: "Receipt from Restaurant" },
+            { str: "Date: invalid-date-format" }, // This should cause parsing error
+            { str: "Total: $15.99" },
+          ],
+        }),
+      };
+
+      const mockPdf = {
+        numPages: 1,
+        getPage: vi.fn().mockResolvedValue(mockPage),
+      };
+
+      vi.mocked(pdfjsLib.getDocument).mockResolvedValue(mockPdf as any);
+
+      const result = await parseReceiptFile(mockFile);
+      // Should still parse other parts but use fallback date
+      expect(result).toBeTruthy();
+      expect(result?.date).toBe(new Date().toISOString().split("T")[0]);
+    });
+
+    it("should use fallback date when no date found in text", async () => {
+      const mockFile = new File(["test"], "receipt.pdf", {
+        type: "application/pdf",
+      });
+      const mockPage = {
+        getTextContent: vi.fn().mockResolvedValue({
+          items: [
+            { str: "Receipt from Restaurant" },
+            { str: "Total: $15.99" },
+            // No date in the text
+          ],
+        }),
+      };
+
+      const mockPdf = {
+        numPages: 1,
+        getPage: vi.fn().mockResolvedValue(mockPage),
+      };
+
+      vi.mocked(pdfjsLib.getDocument).mockResolvedValue(mockPdf as any);
+
+      const result = await parseReceiptFile(mockFile);
+      expect(result?.date).toBe(new Date().toISOString().split("T")[0]);
+    });
+
+    it("should handle UberEats parsing errors by returning fallback", async () => {
+      const mockFile = new File(["test"], "uber-receipt.pdf", {
+        type: "application/pdf",
+      });
+      const mockPage = {
+        getTextContent: vi.fn().mockImplementation(() => {
+          throw new Error("Failed to get text content");
+        }),
+      };
+
+      const mockPdf = {
+        numPages: 1,
+        getPage: vi.fn().mockResolvedValue(mockPage),
+      };
+
+      vi.mocked(pdfjsLib.getDocument).mockResolvedValue(mockPdf as any);
+
+      const result = await parseReceiptFile(mockFile);
+      // Should return fallback UberEats template
+      expect(result).toEqual({
+        description: "UberEats Order",
+        amount: "",
+        date: new Date().toISOString().split("T")[0],
+        category: "Food & Dining",
+        confidence: 0.3,
+      });
+    });
+
+    it("should handle filename date extraction errors", async () => {
+      const mockFile = new File(["test"], "invalid-filename.pdf", {
+        type: "application/pdf",
+      });
+      const mockPage = {
+        getTextContent: vi.fn().mockResolvedValue({
+          items: [{ str: "Receipt from Restaurant" }, { str: "Total: $15.99" }],
+        }),
+      };
+
+      const mockPdf = {
+        numPages: 1,
+        getPage: vi.fn().mockResolvedValue(mockPage),
+      };
+
+      vi.mocked(pdfjsLib.getDocument).mockResolvedValue(mockPdf as any);
+
+      const result = await parseReceiptFile(mockFile);
+      // Should use current date as fallback
+      expect(result?.date).toBe(new Date().toISOString().split("T")[0]);
+    });
+  });
 });
