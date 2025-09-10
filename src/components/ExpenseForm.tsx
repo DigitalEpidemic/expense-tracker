@@ -11,7 +11,7 @@ import {
 interface ExpenseFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: ExpenseFormData) => void;
+  onSubmit: (data: ExpenseFormData | ExpenseFormData[]) => void;
   initialData?: ExpenseFormData;
   title: string;
 }
@@ -31,6 +31,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     reimbursed: false,
   });
 
+  const [formDataList, setFormDataList] = useState<ExpenseFormData[]>([]);
   const [isParsingReceipt, setIsParsingReceipt] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -51,18 +52,33 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     }
     // Clear uploaded files when form is reset/reopened
     setUploadedFiles([]);
+    setFormDataList([]);
   }, [initialData, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      !formData.description.trim() ||
-      !formData.amount ||
-      !formData.category
-    ) {
-      return;
+
+    // If multiple files, submit all forms
+    if (uploadedFiles.length > 1) {
+      const invalidForms = formDataList.some(
+        (form) => !form.description.trim() || !form.amount || !form.category
+      );
+      if (invalidForms) {
+        alert("Please fill in all required fields for each expense.");
+        return;
+      }
+      onSubmit(formDataList);
+    } else {
+      // Single form submission
+      if (
+        !formData.description.trim() ||
+        !formData.amount ||
+        !formData.category
+      ) {
+        return;
+      }
+      onSubmit(formData);
     }
-    onSubmit(formData);
     onClose();
   };
 
@@ -94,9 +110,24 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
     setUploadedFiles(validFiles);
 
-    // Parse the first file automatically
-    if (validFiles.length > 0) {
+    if (validFiles.length === 1) {
+      // Single file - parse into main form
       await parseReceipt(validFiles[0]);
+    } else {
+      // Multiple files - create form data for each
+      const newFormDataList = validFiles.map(() => ({
+        description: "",
+        amount: "",
+        date: new Date().toISOString().split("T")[0],
+        category: "",
+        reimbursed: false,
+      }));
+      setFormDataList(newFormDataList);
+
+      // Parse each file
+      for (let i = 0; i < validFiles.length; i++) {
+        await parseReceiptForIndex(validFiles[i], i);
+      }
     }
   };
 
@@ -139,8 +170,54 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     }
   };
 
+  const parseReceiptForIndex = async (file: File, index: number) => {
+    try {
+      const parsedData = await parseReceiptFile(file);
+      if (parsedData) {
+        setFormDataList((prev) =>
+          prev.map((item, i) =>
+            i === index
+              ? {
+                  ...item,
+                  description: parsedData.description,
+                  amount: parsedData.amount,
+                  date: parsedData.date,
+                  category: parsedData.category,
+                }
+              : item
+          )
+        );
+      }
+    } catch (error) {
+      console.error(`Failed to parse receipt ${index + 1}:`, error);
+    }
+  };
+
   const removeFile = (index: number) => {
     setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
+    if (uploadedFiles.length > 1) {
+      setFormDataList((prev) => prev.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleMultiFormChange = (
+    index: number,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value, type } = e.target;
+    setFormDataList((prev) =>
+      prev.map((item, i) =>
+        i === index
+          ? {
+              ...item,
+              [name]:
+                type === "checkbox"
+                  ? (e.target as HTMLInputElement).checked
+                  : value,
+            }
+          : item
+      )
+    );
   };
 
   if (!isOpen) return null;
@@ -160,187 +237,318 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Receipt Upload Section */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Upload Receipt (Optional)
-            </label>
-            <div
-              className={`border-2 border-dashed rounded-lg p-4 transition-colors ${
-                isDragOver
-                  ? "border-blue-400 bg-blue-50"
-                  : "border-gray-300 hover:border-gray-400"
-              }`}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            >
-              <input
-                type="file"
-                id="receipt-upload"
-                multiple
-                accept="image/*,.pdf"
-                onChange={handleFileUpload}
-                className="hidden"
-                disabled={isParsingReceipt}
-              />
-              <label
-                htmlFor="receipt-upload"
-                className="cursor-pointer flex flex-col items-center justify-center space-y-2"
-              >
-                <Upload
-                  className={`w-8 h-8 ${
-                    isDragOver ? "text-blue-500" : "text-gray-400"
-                  }`}
-                />
-                <span
-                  className={`text-sm ${
-                    isDragOver ? "text-blue-700" : "text-gray-600"
-                  }`}
-                >
-                  {isDragOver
-                    ? "Drop files here"
-                    : "Click to upload or drag and drop receipt images or PDFs"}
-                </span>
-                <span className="text-xs text-gray-500">
-                  Supports JPG, PNG, WebP, PDF (max 10MB each)
-                </span>
+          {uploadedFiles.length === 0 && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Upload Receipt (Optional)
               </label>
-            </div>
-
-            {/* Uploaded Files */}
-            {uploadedFiles.length > 0 && (
-              <div className="mt-3 space-y-2">
-                {uploadedFiles.map((file, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between bg-gray-50 p-2 rounded"
+              <div
+                className={`border-2 border-dashed rounded-lg p-4 transition-colors ${
+                  isDragOver
+                    ? "border-blue-400 bg-blue-50"
+                    : "border-gray-300 hover:border-gray-400"
+                }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                <input
+                  type="file"
+                  id="receipt-upload"
+                  multiple
+                  accept="image/*,.pdf"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  disabled={isParsingReceipt}
+                />
+                <label
+                  htmlFor="receipt-upload"
+                  className="cursor-pointer flex flex-col items-center justify-center space-y-2"
+                >
+                  <Upload
+                    className={`w-8 h-8 ${
+                      isDragOver ? "text-blue-500" : "text-gray-400"
+                    }`}
+                  />
+                  <span
+                    className={`text-sm ${
+                      isDragOver ? "text-blue-700" : "text-gray-600"
+                    }`}
                   >
+                    {isDragOver
+                      ? "Drop files here"
+                      : "Click to upload or drag and drop receipt images or PDFs"}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    Supports JPG, PNG, WebP, PDF (max 10MB each)
+                  </span>
+                </label>
+              </div>
+            </div>
+          )}
+
+          {/* Multiple Files - Show all forms */}
+          {uploadedFiles.length > 1 ? (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Expense Forms ({uploadedFiles.length})
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUploadedFiles([]);
+                    setFormDataList([]);
+                  }}
+                  className="text-sm text-blue-600 hover:text-blue-700"
+                >
+                  Upload Different Files
+                </button>
+              </div>
+
+              {formDataList.map((formData, index) => (
+                <div
+                  key={index}
+                  className="border border-gray-200 rounded-lg p-4 bg-gray-50"
+                >
+                  <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-2">
-                      <FileText className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm text-gray-700">
-                        {file.name} ({formatFileSize(file.size)})
+                      <FileText className="w-5 h-5 text-gray-500" />
+                      <span className="font-medium text-gray-900">
+                        Expense {index + 1}: {uploadedFiles[index]?.name}
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        ({formatFileSize(uploadedFiles[index]?.size || 0)})
                       </span>
                     </div>
                     <button
                       type="button"
                       onClick={() => removeFile(index)}
                       className="text-red-500 hover:text-red-700"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Description
+                      </label>
+                      <input
+                        type="text"
+                        name="description"
+                        value={formData.description}
+                        onChange={(e) => handleMultiFormChange(index, e)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter expense description"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Amount
+                      </label>
+                      <input
+                        type="number"
+                        name="amount"
+                        value={formData.amount}
+                        onChange={(e) => handleMultiFormChange(index, e)}
+                        step="0.01"
+                        min="0"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="0.00"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Date
+                      </label>
+                      <input
+                        type="date"
+                        name="date"
+                        value={formData.date}
+                        onChange={(e) => handleMultiFormChange(index, e)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Category
+                      </label>
+                      <select
+                        name="category"
+                        value={formData.category}
+                        onChange={(e) => handleMultiFormChange(index, e)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required
+                      >
+                        <option value="">Select category</option>
+                        {categories.map((category) => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          name="reimbursed"
+                          checked={formData.reimbursed}
+                          onChange={(e) => handleMultiFormChange(index, e)}
+                          className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                        />
+                        <label className="text-sm font-medium text-gray-700">
+                          Already reimbursed
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            /* Single File - Show regular form */
+            <>
+              {/* Uploaded Files */}
+              {uploadedFiles.length > 0 && (
+                <div className="mb-4">
+                  <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                    <div className="flex items-center space-x-2">
+                      <FileText className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-700">
+                        {uploadedFiles[0].name} (
+                        {formatFileSize(uploadedFiles[0].size)})
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(0)}
+                      className="text-red-500 hover:text-red-700"
                       disabled={isParsingReceipt}
                     >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
-                ))}
+                </div>
+              )}
+
+              {/* Parsing Status */}
+              {isParsingReceipt && (
+                <div className="mb-4 flex items-center space-x-2 text-blue-600">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-sm">Parsing receipt...</span>
+                </div>
+              )}
+
+              <div>
+                <label
+                  htmlFor="description"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Description
+                </label>
+                <input
+                  type="text"
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  placeholder="Enter expense description"
+                  required
+                />
               </div>
-            )}
 
-            {/* Parsing Status */}
-            {isParsingReceipt && (
-              <div className="mt-3 flex items-center space-x-2 text-blue-600">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm">Parsing receipt...</span>
+              <div>
+                <label
+                  htmlFor="amount"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Amount
+                </label>
+                <input
+                  type="number"
+                  id="amount"
+                  name="amount"
+                  value={formData.amount}
+                  onChange={handleChange}
+                  step="0.01"
+                  min="0"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  placeholder="0.00"
+                  required
+                />
               </div>
-            )}
-          </div>
 
-          <div>
-            <label
-              htmlFor="description"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Description
-            </label>
-            <input
-              type="text"
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-              placeholder="Enter expense description"
-              required
-            />
-          </div>
+              <div>
+                <label
+                  htmlFor="date"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Date
+                </label>
+                <input
+                  type="date"
+                  id="date"
+                  name="date"
+                  value={formData.date}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  required
+                />
+              </div>
 
-          <div>
-            <label
-              htmlFor="amount"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Amount
-            </label>
-            <input
-              type="number"
-              id="amount"
-              name="amount"
-              value={formData.amount}
-              onChange={handleChange}
-              step="0.01"
-              min="0"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-              placeholder="0.00"
-              required
-            />
-          </div>
+              <div>
+                <label
+                  htmlFor="category"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Category
+                </label>
+                <select
+                  id="category"
+                  name="category"
+                  value={formData.category}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  required
+                >
+                  <option value="">Select category</option>
+                  {categories.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          <div>
-            <label
-              htmlFor="date"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Date
-            </label>
-            <input
-              type="date"
-              id="date"
-              name="date"
-              value={formData.date}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-              required
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="category"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Category
-            </label>
-            <select
-              id="category"
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-              required
-            >
-              <option value="">Select category</option>
-              {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              id="reimbursed"
-              name="reimbursed"
-              checked={formData.reimbursed}
-              onChange={handleChange}
-              className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-            />
-            <label
-              htmlFor="reimbursed"
-              className="text-sm font-medium text-gray-700"
-            >
-              Already reimbursed
-            </label>
-          </div>
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="reimbursed"
+                  name="reimbursed"
+                  checked={formData.reimbursed}
+                  onChange={handleChange}
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                />
+                <label
+                  htmlFor="reimbursed"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Already reimbursed
+                </label>
+              </div>
+            </>
+          )}
 
           <div className="flex gap-3 pt-4">
             <button
@@ -356,7 +564,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
               disabled={isParsingReceipt}
             >
               <Save className="w-4 h-4" />
-              Save
+              {uploadedFiles.length > 1
+                ? `Save All (${uploadedFiles.length})`
+                : "Save"}
             </button>
           </div>
         </form>

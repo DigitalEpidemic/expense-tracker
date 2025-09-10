@@ -50,13 +50,25 @@ function App() {
     return { total, reimbursed, pending };
   }, [expenses]);
 
-  const handleAddExpense = async (data: ExpenseFormData) => {
-    await addExpense(data);
+  const handleAddExpense = async (
+    data: ExpenseFormData | ExpenseFormData[]
+  ) => {
+    if (Array.isArray(data)) {
+      // Bulk upload
+      for (const expense of data) {
+        await addExpense(expense);
+      }
+    } else {
+      // Single expense
+      await addExpense(data);
+    }
     setIsFormOpen(false);
   };
 
-  const handleEditExpense = async (data: ExpenseFormData) => {
-    if (editingExpense) {
+  const handleEditExpense = async (
+    data: ExpenseFormData | ExpenseFormData[]
+  ) => {
+    if (editingExpense && !Array.isArray(data)) {
       await updateExpense(editingExpense.id, data);
       setEditingExpense(null);
     }
