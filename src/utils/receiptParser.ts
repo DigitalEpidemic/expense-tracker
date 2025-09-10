@@ -9,6 +9,465 @@ export interface ParsedReceiptData {
   confidence: number;
 }
 
+export abstract class BaseReceiptParser {
+  abstract canParse(text: string, fileName: string): boolean;
+  abstract parse(text: string, fileName: string): ParsedReceiptData | null;
+  protected abstract getServiceName(): string;
+  protected abstract getDefaultCategory(): string;
+
+  protected extractDateFromFileName(fileName: string): string | null {
+    try {
+      const match = fileName.match(/Receipt_(\d{2})(\w{3})(\d{4})/);
+      if (match) {
+        const day = match[1];
+        const monthStr = match[2];
+        const year = match[3];
+
+        const monthMap: { [key: string]: string } = {
+          Jan: "01",
+          Feb: "02",
+          Mar: "03",
+          Apr: "04",
+          May: "05",
+          Jun: "06",
+          Jul: "07",
+          Aug: "08",
+          Sep: "09",
+          Oct: "10",
+          Nov: "11",
+          Dec: "12",
+        };
+
+        const month = monthMap[monthStr];
+        if (month) {
+          return `${year}-${month}-${day}`;
+        }
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  protected getCurrentDate(): string {
+    return new Date().toISOString().split("T")[0];
+  }
+}
+
+// Helper function for filename date extraction outside of classes
+function extractDateFromFileName(fileName: string): string | null {
+  try {
+    const match = fileName.match(/Receipt_(\d{2})(\w{3})(\d{4})/);
+    if (match) {
+      const day = match[1];
+      const monthStr = match[2];
+      const year = match[3];
+
+      const monthMap: { [key: string]: string } = {
+        Jan: "01",
+        Feb: "02",
+        Mar: "03",
+        Apr: "04",
+        May: "05",
+        Jun: "06",
+        Jul: "07",
+        Aug: "08",
+        Sep: "09",
+        Oct: "10",
+        Nov: "11",
+        Dec: "12",
+      };
+
+      const month = monthMap[monthStr];
+      if (month) {
+        return `${year}-${month}-${day}`;
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export class UberEatsReceiptParser extends BaseReceiptParser {
+  canParse(text: string, fileName: string): boolean {
+    const lowerText = text.toLowerCase();
+    const lowerFileName = fileName.toLowerCase();
+
+    // Direct UberEats mentions
+    if (
+      lowerText.includes("uber eats") ||
+      lowerText.includes("ubereats") ||
+      lowerFileName.includes("ubereats")
+    ) {
+      return true;
+    }
+
+    // Common UberEats patterns for backwards compatibility
+    if (lowerText.includes("you ordered from") && lowerText.includes("total")) {
+      return true;
+    }
+
+    if (lowerText.includes("receipt from") && lowerText.includes("total")) {
+      return true;
+    }
+
+    // Filename patterns that suggest UberEats
+    if (lowerFileName.includes("receipt_") && lowerFileName.includes(".pdf")) {
+      return true;
+    }
+
+    return false;
+  }
+
+  protected getServiceName(): string {
+    return "UberEats";
+  }
+
+  protected getDefaultCategory(): string {
+    return "Food & Dining";
+  }
+
+  parse(text: string, fileName: string): ParsedReceiptData | null {
+    try {
+      console.log("Parsing UberEats text:", text.substring(0, 500));
+
+      const cleanText = text.replace(/\s+/g, " ").trim();
+
+      let amount = "";
+      const totalPatterns = [
+        /Total\s+CA\$(\d+\.\d{2})/i,
+        /Total CA\$(\d+\.\d{2})/i,
+        /CA\$(\d+\.\d{2})\s*You\s+ordered/i,
+        /Total\s+\$(\d+\.\d{2})/i,
+        /Total \$(\d+\.\d{2})/i,
+        /\$(\d+\.\d{2})\s*You\s+ordered/i,
+        /\$(\d+\.\d{2})\s*(?:Visa|Mastercard|Card|Payment)/i,
+        /Total:\s*\$(\d+\.\d{2})/i,
+        /Grand\s+Total\s*\$(\d+\.\d{2})/i,
+        /Amount\s+Charged\s*\$(\d+\.\d{2})/i,
+      ];
+
+      for (const pattern of totalPatterns) {
+        const match = cleanText.match(pattern);
+        if (match) {
+          amount = match[1];
+          console.log("Found amount:", amount);
+          break;
+        }
+      }
+
+      let description = "";
+      const restaurantLocationPatterns = [
+        /Here's your receipt from (.+?) and Uber Eats/i,
+        /receipt from (.+?) and Uber Eats/i,
+        /You ordered from (.+?)(?:\s+Picked up|\s*$)/i,
+        /Order from (.+?)(?:\s|$)/i,
+        /(.+?)\s+Order/i,
+        /Receipt\s+(.+?)(?:\s+\d+|\s*$)/i,
+      ];
+
+      let restaurantName = "";
+      let location = "";
+
+      for (const pattern of restaurantLocationPatterns) {
+        const match = cleanText.match(pattern);
+        if (match) {
+          const fullRestaurantInfo = match[1].trim();
+
+          const parenMatch = fullRestaurantInfo.match(
+            /^([^(]+)\s*\(([^)]+)\)$/
+          );
+          if (parenMatch) {
+            restaurantName = parenMatch[1].trim();
+            location = parenMatch[2].trim();
+            console.log(
+              "Found restaurant with location:",
+              restaurantName,
+              location
+            );
+          } else {
+            restaurantName = fullRestaurantInfo;
+            console.log("Found restaurant name:", restaurantName);
+          }
+          break;
+        }
+      }
+
+      if (!location) {
+        const addressPatterns = [
+          /Picked up from\s+(.+?)(?:\s+Delivered to)/i,
+          /(\d+\s+[^,]+(?:Ave|St|Street|Avenue|Road|Rd|Blvd|Boulevard|Drive|Dr|Lane|Ln|Way)[^,]*)/i,
+          /Delivery address:\s*(.+?)(?:\n|\r|$)/i,
+          /Address:\s*(.+?)(?:\n|\r|$)/i,
+          /([A-Za-z\s]+,\s*[A-Z]{2}\s+\d{5})/i,
+        ];
+
+        for (const pattern of addressPatterns) {
+          const match = cleanText.match(pattern);
+          if (match) {
+            const fullAddress = match[1].trim();
+            const addressParts = fullAddress.split(",");
+            location = addressParts[0].trim();
+            console.log("Found location from address:", location);
+            break;
+          }
+        }
+      }
+
+      if (restaurantName && location) {
+        description = `${restaurantName} (${location})`;
+      } else if (restaurantName) {
+        description = restaurantName;
+      } else {
+        description = "UberEats Order";
+      }
+
+      let date = "";
+      const datePatterns = [
+        /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(\d{4})/i,
+        /(\d{1,2}\/\d{1,2}\/\d{4})/,
+        /(\d{4}-\d{2}-\d{2})/,
+      ];
+
+      for (const pattern of datePatterns) {
+        const match = cleanText.match(pattern);
+        if (match) {
+          try {
+            let parsedDate: Date;
+            if (pattern === datePatterns[0]) {
+              const monthName = match[1];
+              const day = parseInt(match[2]);
+              const year = parseInt(match[3]);
+              const monthIndex = [
+                "January",
+                "February",
+                "March",
+                "April",
+                "May",
+                "June",
+                "July",
+                "August",
+                "September",
+                "October",
+                "November",
+                "December",
+              ].indexOf(monthName);
+              parsedDate = new Date(year, monthIndex, day);
+            } else {
+              parsedDate = new Date(match[1]);
+            }
+
+            if (!isNaN(parsedDate.getTime())) {
+              date = parsedDate.toISOString().split("T")[0];
+              console.log("Found date:", date);
+              break;
+            }
+          } catch {
+            console.log("Could not parse date:", match[1]);
+          }
+        }
+      }
+
+      if (!date) {
+        date = this.extractDateFromFileName(fileName) || this.getCurrentDate();
+      }
+
+      if (!amount) {
+        console.log("Could not extract amount from receipt text");
+        return null;
+      }
+
+      console.log("Successfully parsed receipt:", {
+        description,
+        amount,
+        date,
+      });
+
+      return {
+        description,
+        amount,
+        date,
+        category: this.getDefaultCategory(),
+        confidence: 0.9,
+      };
+    } catch (error) {
+      console.error("Error parsing UberEats text:", error);
+      return null;
+    }
+  }
+}
+
+export class DoorDashReceiptParser extends BaseReceiptParser {
+  canParse(text: string, fileName: string): boolean {
+    const lowerText = text.toLowerCase();
+    return (
+      lowerText.includes("doordash") ||
+      lowerText.includes("door dash") ||
+      fileName.toLowerCase().includes("doordash")
+    );
+  }
+
+  protected getServiceName(): string {
+    return "DoorDash";
+  }
+
+  protected getDefaultCategory(): string {
+    return "Food & Dining";
+  }
+
+  parse(text: string, fileName: string): ParsedReceiptData | null {
+    try {
+      console.log("Parsing DoorDash text:", text.substring(0, 500));
+
+      const cleanText = text.replace(/\s+/g, " ").trim();
+
+      let amount = "";
+      const totalPatterns = [
+        /Total\s+\$(\d+\.\d{2})/i,
+        /Total:\s*\$(\d+\.\d{2})/i,
+        /Grand\s+Total\s*\$(\d+\.\d{2})/i,
+        /Order\s+Total\s*\$(\d+\.\d{2})/i,
+        /\$(\d+\.\d{2})\s*(?:Total|Charged|Paid)/i,
+        /Amount\s*\$(\d+\.\d{2})/i,
+      ];
+
+      for (const pattern of totalPatterns) {
+        const match = cleanText.match(pattern);
+        if (match) {
+          amount = match[1];
+          console.log("Found amount:", amount);
+          break;
+        }
+      }
+
+      let description = "";
+      const restaurantPatterns = [
+        /from\s+(.+?)(?:\s+Order|\s*$)/i,
+        /(.+?)\s+Order/i,
+        /Restaurant:\s*(.+?)(?:\n|\r|$)/i,
+        /Delivery\s+from\s+(.+?)(?:\n|\r|$)/i,
+      ];
+
+      let restaurantName = "";
+
+      for (const pattern of restaurantPatterns) {
+        const match = cleanText.match(pattern);
+        if (match) {
+          restaurantName = match[1].trim();
+          console.log("Found restaurant name:", restaurantName);
+          break;
+        }
+      }
+
+      if (restaurantName) {
+        description = restaurantName;
+      } else {
+        description = "DoorDash Order";
+      }
+
+      let date = "";
+      const datePatterns = [
+        /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(\d{4})/i,
+        /(\d{1,2}\/\d{1,2}\/\d{4})/,
+        /(\d{4}-\d{2}-\d{2})/,
+        /\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/,
+      ];
+
+      for (const pattern of datePatterns) {
+        const match = cleanText.match(pattern);
+        if (match) {
+          try {
+            let parsedDate: Date;
+            if (pattern === datePatterns[0]) {
+              const monthName = match[1];
+              const day = parseInt(match[2]);
+              const year = parseInt(match[3]);
+              const monthIndex = [
+                "January",
+                "February",
+                "March",
+                "April",
+                "May",
+                "June",
+                "July",
+                "August",
+                "September",
+                "October",
+                "November",
+                "December",
+              ].indexOf(monthName);
+              parsedDate = new Date(year, monthIndex, day);
+            } else if (pattern === datePatterns[3]) {
+              const month = parseInt(match[1]);
+              const day = parseInt(match[2]);
+              let year = parseInt(match[3]);
+              if (year < 100) year += 2000;
+              parsedDate = new Date(year, month - 1, day);
+            } else {
+              parsedDate = new Date(match[1]);
+            }
+
+            if (!isNaN(parsedDate.getTime())) {
+              date = parsedDate.toISOString().split("T")[0];
+              console.log("Found date:", date);
+              break;
+            }
+          } catch {
+            console.log("Could not parse date:", match[1]);
+          }
+        }
+      }
+
+      if (!date) {
+        date = this.extractDateFromFileName(fileName) || this.getCurrentDate();
+      }
+
+      if (!amount) {
+        console.log("Could not extract amount from DoorDash receipt text");
+        return null;
+      }
+
+      console.log("Successfully parsed DoorDash receipt:", {
+        description,
+        amount,
+        date,
+      });
+
+      return {
+        description,
+        amount,
+        date,
+        category: this.getDefaultCategory(),
+        confidence: 0.9,
+      };
+    } catch (error) {
+      console.error("Error parsing DoorDash text:", error);
+      return null;
+    }
+  }
+}
+
+export class ReceiptParserFactory {
+  private static parsers: BaseReceiptParser[] = [
+    new UberEatsReceiptParser(),
+    new DoorDashReceiptParser(),
+  ];
+
+  static findParser(text: string, fileName: string): BaseReceiptParser | null {
+    for (const parser of this.parsers) {
+      if (parser.canParse(text, fileName)) {
+        return parser;
+      }
+    }
+    return null;
+  }
+
+  static registerParser(parser: BaseReceiptParser): void {
+    this.parsers.push(parser);
+  }
+}
+
 export async function parseReceiptFile(
   file: File
 ): Promise<ParsedReceiptData | null> {
@@ -67,8 +526,26 @@ async function parsePDFWithPDFJS(
 
     console.log("Full extracted text:", fullText);
 
-    // Parse the extracted text for UberEats patterns
-    return parseUberEatsReceipt(fullText, file.name);
+    // Use the parser factory to find the appropriate parser
+    const parser = ReceiptParserFactory.findParser(fullText, file.name);
+    if (parser) {
+      return parser.parse(fullText, file.name);
+    } else {
+      console.log(
+        "No suitable parser found for receipt, attempting generic fallback"
+      );
+      // Fallback: create basic template with filename date
+      const date =
+        extractDateFromFileName(file.name) ||
+        new Date().toISOString().split("T")[0];
+      return {
+        description: "Receipt",
+        amount: "",
+        date: date,
+        category: "Miscellaneous",
+        confidence: 0.3,
+      };
+    }
   } catch (error) {
     console.error("Error parsing PDF with PDF.js:", error);
 
@@ -83,228 +560,6 @@ async function parsePDFWithPDFJS(
       category: "Food & Dining",
       confidence: 0.3,
     };
-  }
-}
-
-function parseUberEatsReceipt(
-  text: string,
-  fileName: string
-): ParsedReceiptData | null {
-  try {
-    console.log("Parsing UberEats text:", text.substring(0, 500));
-
-    // Clean up the text
-    const cleanText = text.replace(/\s+/g, " ").trim();
-
-    // Extract total amount - support both US ($) and Canadian (CA$) formats
-    let amount = "";
-    const totalPatterns = [
-      // Canadian patterns
-      /Total\s+CA\$(\d+\.\d{2})/i,
-      /Total CA\$(\d+\.\d{2})/i,
-      /CA\$(\d+\.\d{2})\s*You\s+ordered/i,
-      // US patterns
-      /Total\s+\$(\d+\.\d{2})/i,
-      /Total \$(\d+\.\d{2})/i,
-      /\$(\d+\.\d{2})\s*You\s+ordered/i,
-      /\$(\d+\.\d{2})\s*(?:Visa|Mastercard|Card|Payment)/i,
-      // More generic patterns for US receipts
-      /Total:\s*\$(\d+\.\d{2})/i,
-      /Grand\s+Total\s*\$(\d+\.\d{2})/i,
-      /Amount\s+Charged\s*\$(\d+\.\d{2})/i,
-    ];
-
-    for (const pattern of totalPatterns) {
-      const match = cleanText.match(pattern);
-      if (match) {
-        amount = match[1];
-        console.log("Found amount:", amount);
-        break;
-      }
-    }
-
-    // Extract restaurant name and location
-    let description = "";
-
-    // Look for restaurant name and location - patterns for both US and Canadian receipts
-    const restaurantLocationPatterns = [
-      /Here's your receipt from (.+?) and Uber Eats/i,
-      /receipt from (.+?) and Uber Eats/i,
-      /You ordered from (.+?)(?:\s+Picked up|\s*$)/i,
-      // Additional US patterns
-      /Order from (.+?)(?:\s|$)/i,
-      /(.+?)\s+Order/i,
-      /Receipt\s+(.+?)(?:\s+\d+|\s*$)/i,
-    ];
-
-    let restaurantName = "";
-    let location = "";
-
-    // First try to get restaurant name
-    for (const pattern of restaurantLocationPatterns) {
-      const match = cleanText.match(pattern);
-      if (match) {
-        const fullRestaurantInfo = match[1].trim();
-
-        // Check if the restaurant info already contains address in parentheses
-        const parenMatch = fullRestaurantInfo.match(/^([^(]+)\s*\(([^)]+)\)$/);
-        if (parenMatch) {
-          restaurantName = parenMatch[1].trim();
-          location = parenMatch[2].trim();
-          console.log(
-            "Found restaurant with location:",
-            restaurantName,
-            location
-          );
-        } else {
-          restaurantName = fullRestaurantInfo;
-          console.log("Found restaurant name:", restaurantName);
-        }
-        break;
-      }
-    }
-
-    // If we don't have location yet, try to extract it from pickup address
-    if (!location) {
-      const addressPatterns = [
-        /Picked up from\s+(.+?)(?:\s+Delivered to)/i,
-        // US and Canadian address patterns
-        /(\d+\s+[^,]+(?:Ave|St|Street|Avenue|Road|Rd|Blvd|Boulevard|Drive|Dr|Lane|Ln|Way)[^,]*)/i,
-        /Delivery address:\s*(.+?)(?:\n|\r|$)/i,
-        /Address:\s*(.+?)(?:\n|\r|$)/i,
-        // City, State patterns for US
-        /([A-Za-z\s]+,\s*[A-Z]{2}\s+\d{5})/i,
-      ];
-
-      for (const pattern of addressPatterns) {
-        const match = cleanText.match(pattern);
-        if (match) {
-          const fullAddress = match[1].trim();
-          // Clean up address - take first part before postal code
-          const addressParts = fullAddress.split(",");
-          location = addressParts[0].trim();
-          console.log("Found location from address:", location);
-          break;
-        }
-      }
-    }
-
-    // Combine restaurant and location
-    if (restaurantName && location) {
-      description = `${restaurantName} (${location})`;
-    } else if (restaurantName) {
-      description = restaurantName;
-    } else {
-      description = "UberEats Order";
-    }
-
-    // Extract date
-    let date = "";
-    const datePatterns = [
-      /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(\d{4})/i,
-      /(\d{1,2}\/\d{1,2}\/\d{4})/,
-      /(\d{4}-\d{2}-\d{2})/,
-    ];
-
-    for (const pattern of datePatterns) {
-      const match = cleanText.match(pattern);
-      if (match) {
-        try {
-          let parsedDate: Date;
-          if (pattern === datePatterns[0]) {
-            // Month name format
-            const monthName = match[1];
-            const day = parseInt(match[2]);
-            const year = parseInt(match[3]);
-            const monthIndex = [
-              "January",
-              "February",
-              "March",
-              "April",
-              "May",
-              "June",
-              "July",
-              "August",
-              "September",
-              "October",
-              "November",
-              "December",
-            ].indexOf(monthName);
-            parsedDate = new Date(year, monthIndex, day);
-          } else {
-            parsedDate = new Date(match[1]);
-          }
-
-          if (!isNaN(parsedDate.getTime())) {
-            date = parsedDate.toISOString().split("T")[0];
-            console.log("Found date:", date);
-            break;
-          }
-        } catch {
-          console.log("Could not parse date:", match[1]);
-        }
-      }
-    }
-
-    // Fallback: extract date from filename
-    if (!date) {
-      date =
-        extractDateFromFileName(fileName) ||
-        new Date().toISOString().split("T")[0];
-    }
-
-    // Validate we found at least the amount
-    if (!amount) {
-      console.log("Could not extract amount from receipt text");
-      return null;
-    }
-
-    console.log("Successfully parsed receipt:", { description, amount, date });
-
-    return {
-      description,
-      amount,
-      date,
-      category: "Food & Dining",
-      confidence: 0.9,
-    };
-  } catch (error) {
-    console.error("Error parsing UberEats text:", error);
-    return null;
-  }
-}
-
-function extractDateFromFileName(fileName: string): string | null {
-  try {
-    const match = fileName.match(/Receipt_(\d{2})(\w{3})(\d{4})/);
-    if (match) {
-      const day = match[1];
-      const monthStr = match[2];
-      const year = match[3];
-
-      const monthMap: { [key: string]: string } = {
-        Jan: "01",
-        Feb: "02",
-        Mar: "03",
-        Apr: "04",
-        May: "05",
-        Jun: "06",
-        Jul: "07",
-        Aug: "08",
-        Sep: "09",
-        Oct: "10",
-        Nov: "11",
-        Dec: "12",
-      };
-
-      const month = monthMap[monthStr];
-      if (month) {
-        return `${year}-${month}-${day}`;
-      }
-    }
-    return null;
-  } catch {
-    return null;
   }
 }
 
