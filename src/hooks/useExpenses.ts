@@ -1,20 +1,19 @@
-import { useEffect, useState } from 'react';
 import {
-  collection,
-  query,
-  where,
-  orderBy,
-  onSnapshot,
   addDoc,
-  updateDoc,
+  collection,
   deleteDoc,
   doc,
-  Timestamp
-} from 'firebase/firestore';
-import { db } from '../config/firebase';
-import { Expense, ExpenseFormData } from '../types/expense';
-import toast from 'react-hot-toast';
-import { v4 as uuidv4 } from 'uuid';
+  onSnapshot,
+  orderBy,
+  query,
+  Timestamp,
+  updateDoc,
+  where,
+} from "firebase/firestore";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { db } from "../config/firebase";
+import { Expense, ExpenseFormData } from "../types/expense";
 
 export const useExpenses = (userId: string | null) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -28,9 +27,9 @@ export const useExpenses = (userId: string | null) => {
     }
 
     const q = query(
-      collection(db, 'expenses'),
-      where('userId', '==', userId),
-      orderBy('date', 'desc')
+      collection(db, "expenses"),
+      where("userId", "==", userId),
+      orderBy("date", "desc")
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -56,54 +55,56 @@ export const useExpenses = (userId: string | null) => {
 
     try {
       const now = new Date();
-      await addDoc(collection(db, 'expenses'), {
+      await addDoc(collection(db, "expenses"), {
         ...expenseData,
         amount: parseFloat(expenseData.amount),
         userId,
         createdAt: Timestamp.fromDate(now),
         updatedAt: Timestamp.fromDate(now),
       });
-      toast.success('Expense added successfully!');
+      toast.success("Expense added successfully!");
     } catch (error) {
-      console.error('Error adding expense:', error);
-      toast.error('Failed to add expense');
+      console.error("Error adding expense:", error);
+      toast.error("Failed to add expense");
     }
   };
 
-  const updateExpense = async (id: string, expenseData: Partial<ExpenseFormData>) => {
+  const updateExpense = async (
+    id: string,
+    expenseData: Partial<ExpenseFormData>
+  ) => {
     try {
-      const docRef = doc(db, 'expenses', id);
+      const docRef = doc(db, "expenses", id);
       const updateData: any = {
         ...expenseData,
         updatedAt: Timestamp.fromDate(new Date()),
       };
-      
+
       if (expenseData.amount) {
         updateData.amount = parseFloat(expenseData.amount);
       }
-      
+
       await updateDoc(docRef, updateData);
-      toast.success('Expense updated successfully!');
+      toast.success("Expense updated successfully!");
     } catch (error) {
-      console.error('Error updating expense:', error);
-      toast.error('Failed to update expense');
+      console.error("Error updating expense:", error);
+      toast.error("Failed to update expense");
     }
   };
 
   const deleteExpense = async (id: string) => {
     try {
-      await deleteDoc(doc(db, 'expenses', id));
-      toast.success('Expense deleted successfully!');
+      await deleteDoc(doc(db, "expenses", id));
+      toast.success("Expense deleted successfully!");
     } catch (error) {
-      console.error('Error deleting expense:', error);
-      toast.error('Failed to delete expense');
+      console.error("Error deleting expense:", error);
+      toast.error("Failed to delete expense");
     }
   };
 
   const toggleReimbursed = async (id: string, reimbursed: boolean) => {
     await updateExpense(id, { reimbursed });
   };
-
 
   return {
     expenses,

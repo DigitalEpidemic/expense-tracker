@@ -57,6 +57,16 @@ export const formatDate = (dateString: string): string => {
   });
 };
 
+export const calculateTotals = (expenses: Expense[]) => {
+  const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const reimbursed = expenses
+    .filter((expense) => expense.reimbursed)
+    .reduce((sum, expense) => sum + expense.amount, 0);
+  const pending = total - reimbursed;
+
+  return { total, reimbursed, pending };
+};
+
 export const getExpenseCategories = (): string[] => {
   return [
     "Food & Dining",

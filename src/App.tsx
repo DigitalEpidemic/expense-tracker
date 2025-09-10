@@ -5,13 +5,19 @@ import { useAuth } from "./hooks/useAuth";
 import { useExpenses } from "./hooks/useExpenses";
 import { useIsDesktop } from "./hooks/useMediaQuery";
 import { Expense, ExpenseFormData } from "./types/expense";
-import { formatCurrency, groupExpensesByMonth } from "./utils/expenseUtils";
+import {
+  calculateTotals,
+  formatCurrency,
+  groupExpensesByMonth,
+} from "./utils/expenseUtils";
 
 import AuthScreen from "./components/AuthScreen";
+import EmptyState from "./components/EmptyState";
 import ExpenseForm from "./components/ExpenseForm";
 import ExpenseList from "./components/ExpenseList";
 import FilterBar from "./components/FilterBar";
 import Header from "./components/Header";
+import LoadingSpinner from "./components/LoadingSpinner";
 import SummaryCards from "./components/SummaryCards";
 
 function App() {
@@ -42,15 +48,7 @@ function App() {
     return groupExpensesByMonth(filteredExpenses);
   }, [filteredExpenses]);
 
-  const totals = useMemo(() => {
-    const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-    const reimbursed = expenses
-      .filter((expense) => expense.reimbursed)
-      .reduce((sum, expense) => sum + expense.amount, 0);
-    const pending = total - reimbursed;
-
-    return { total, reimbursed, pending };
-  }, [expenses]);
+  const totals = useMemo(() => calculateTotals(expenses), [expenses]);
 
   const handleAddExpense = async (
     data: ExpenseFormData | ExpenseFormData[]
@@ -104,10 +102,7 @@ function App() {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div
-          data-testid="loading-spinner"
-          className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
-        ></div>
+        <LoadingSpinner />
       </div>
     );
   }
@@ -152,60 +147,14 @@ function App() {
         {/* Expenses List */}
         {expensesLoading ? (
           <div className="flex items-center justify-center py-12">
-            <div
-              data-testid="loading-spinner"
-              className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
-            ></div>
+            <LoadingSpinner />
           </div>
         ) : monthlyGroups.length === 0 ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Plus className="w-8 h-8 text-gray-400" />
-            </div>
-            {expenses.length === 0 ? (
-              <>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No expenses yet
-                </h3>
-                <p className="text-gray-500 mb-6">
-                  Get started by adding your first expense.
-                </p>
-                <button
-                  onClick={() => setIsFormOpen(true)}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium"
-                >
-                  Add Your First Expense
-                </button>
-              </>
-            ) : filter === "reimbursed" ? (
-              <>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No reimbursed expenses
-                </h3>
-                <p className="text-gray-500">
-                  You haven't marked any expenses as reimbursed yet.
-                </p>
-              </>
-            ) : filter === "pending" ? (
-              <>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No pending expenses
-                </h3>
-                <p className="text-gray-500">
-                  All your expenses have been reimbursed!
-                </p>
-              </>
-            ) : (
-              <>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No expenses found
-                </h3>
-                <p className="text-gray-500">
-                  No expenses match the current filter.
-                </p>
-              </>
-            )}
-          </div>
+          <EmptyState
+            expenses={expenses}
+            filter={filter}
+            onAddExpense={() => setIsFormOpen(true)}
+          />
         ) : (
           <div className="space-y-8">
             {monthlyGroups.map((group) => (

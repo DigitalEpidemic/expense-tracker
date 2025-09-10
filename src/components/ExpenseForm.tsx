@@ -9,6 +9,14 @@ import {
   parseReceiptFile,
 } from "../utils/receiptParser";
 
+const DEFAULT_FORM_DATA: ExpenseFormData = {
+  description: "",
+  amount: "",
+  date: new Date().toISOString().split("T")[0],
+  category: "",
+  reimbursed: false,
+};
+
 interface ExpenseFormProps {
   isOpen: boolean;
   onClose: () => void;
@@ -24,13 +32,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   initialData,
   title,
 }) => {
-  const [formData, setFormData] = useState<ExpenseFormData>({
-    description: "",
-    amount: "",
-    date: new Date().toISOString().split("T")[0],
-    category: "",
-    reimbursed: false,
-  });
+  const [formData, setFormData] = useState<ExpenseFormData>(DEFAULT_FORM_DATA);
 
   const [formDataList, setFormDataList] = useState<ExpenseFormData[]>([]);
   const [isParsingReceipt, setIsParsingReceipt] = useState(false);
@@ -43,13 +45,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     if (initialData) {
       setFormData(initialData);
     } else {
-      setFormData({
-        description: "",
-        amount: "",
-        date: new Date().toISOString().split("T")[0],
-        category: "",
-        reimbursed: false,
-      });
+      setFormData(DEFAULT_FORM_DATA);
     }
     // Clear uploaded files when form is reset/reopened
     setUploadedFiles([]);
@@ -147,13 +143,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           : uploadedFiles.length === 1
           ? [formData]
           : [];
-      const newForms = newFiles.map(() => ({
-        description: "",
-        amount: "",
-        date: new Date().toISOString().split("T")[0],
-        category: "",
-        reimbursed: false,
-      }));
+      const newForms = newFiles.map(() => ({ ...DEFAULT_FORM_DATA }));
 
       const allForms = [...existingForms, ...newForms];
       setFormDataList(allForms);
