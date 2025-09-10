@@ -460,7 +460,7 @@ describe("App", () => {
     // Create a test component that directly calls the bulk functionality
     const TestBulkComponent = () => {
       const { user } = useAuth();
-      const { addExpense } = useExpenses();
+      const { addExpense } = useExpenses(user?.uid || null);
 
       const handleBulkSubmit = async () => {
         const bulkExpenses = [
