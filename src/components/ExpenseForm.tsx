@@ -1,5 +1,6 @@
 import { FileText, Loader2, Save, Upload, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { ExpenseFormData } from "../types/expense";
 import { getExpenseCategories } from "../utils/expenseUtils";
 import {
@@ -64,7 +65,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         (form) => !form.description.trim() || !form.amount || !form.category
       );
       if (invalidForms) {
-        alert("Please fill in all required fields for each expense.");
+        toast.error("Please fill in all required fields for each expense.");
         return;
       }
       onSubmit(formDataList);
@@ -102,31 +103,64 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     const validFiles = files.filter(isValidReceiptFile);
 
     if (validFiles.length === 0) {
-      alert(
+      toast.error(
         "Please upload valid image files (JPG, PNG, WebP) or PDF files under 10MB."
       );
       return;
     }
 
-    setUploadedFiles(validFiles);
+    // Filter out duplicate files
+    const newFiles = validFiles.filter((newFile) => {
+      return !uploadedFiles.some(
+        (existingFile) =>
+          existingFile.name === newFile.name &&
+          existingFile.size === newFile.size &&
+          existingFile.lastModified === newFile.lastModified
+      );
+    });
 
-    if (validFiles.length === 1) {
-      // Single file - parse into main form
-      await parseReceipt(validFiles[0]);
+    if (newFiles.length === 0) {
+      toast.error("All selected files have already been uploaded.");
+      return;
+    }
+
+    if (newFiles.length < validFiles.length) {
+      const duplicateCount = validFiles.length - newFiles.length;
+      const fileText = duplicateCount === 1 ? "file was" : "files were";
+      toast.success(
+        `${duplicateCount} duplicate ${fileText} skipped. Only new files will be added.`
+      );
+    }
+
+    // Append new files to existing ones
+    const allFiles = [...uploadedFiles, ...newFiles];
+    setUploadedFiles(allFiles);
+
+    if (allFiles.length === 1 && uploadedFiles.length === 0) {
+      // First single file - parse into main form
+      await parseReceipt(allFiles[0]);
     } else {
-      // Multiple files - create form data for each
-      const newFormDataList = validFiles.map(() => ({
+      // Multiple files or adding to existing - create/update form data for each
+      const existingForms =
+        uploadedFiles.length > 1
+          ? formDataList
+          : uploadedFiles.length === 1
+          ? [formData]
+          : [];
+      const newForms = newFiles.map(() => ({
         description: "",
         amount: "",
         date: new Date().toISOString().split("T")[0],
         category: "",
         reimbursed: false,
       }));
-      setFormDataList(newFormDataList);
 
-      // Parse each file
-      for (let i = 0; i < validFiles.length; i++) {
-        await parseReceiptForIndex(validFiles[i], i);
+      const allForms = [...existingForms, ...newForms];
+      setFormDataList(allForms);
+
+      // Parse only the new files
+      for (let i = 0; i < newFiles.length; i++) {
+        await parseReceiptForIndex(newFiles[i], uploadedFiles.length + i);
       }
     }
   };
@@ -164,7 +198,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       }
     } catch (error) {
       console.error("Failed to parse receipt:", error);
-      alert("Failed to parse receipt. Please fill in the details manually.");
+      toast.error(
+        "Failed to parse receipt. Please fill in the details manually."
+      );
     } finally {
       setIsParsingReceipt(false);
     }
@@ -237,55 +273,57 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Receipt Upload Section */}
-          {uploadedFiles.length === 0 && (
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Upload Receipt (Optional)
-              </label>
-              <div
-                className={`border-2 border-dashed rounded-lg p-4 transition-colors ${
-                  isDragOver
-                    ? "border-blue-400 bg-blue-50"
-                    : "border-gray-300 hover:border-gray-400"
-                }`}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {uploadedFiles.length === 0
+                ? "Upload Receipt (Optional)"
+                : "Add More Receipts"}
+            </label>
+            <div
+              className={`border-2 border-dashed rounded-lg p-4 transition-colors ${
+                isDragOver
+                  ? "border-blue-400 bg-blue-50"
+                  : "border-gray-300 hover:border-gray-400"
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <input
+                type="file"
+                id="receipt-upload"
+                multiple
+                accept="image/*,.pdf"
+                onChange={handleFileUpload}
+                className="hidden"
+                disabled={isParsingReceipt}
+              />
+              <label
+                htmlFor="receipt-upload"
+                className="cursor-pointer flex flex-col items-center justify-center space-y-2"
               >
-                <input
-                  type="file"
-                  id="receipt-upload"
-                  multiple
-                  accept="image/*,.pdf"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  disabled={isParsingReceipt}
+                <Upload
+                  className={`w-8 h-8 ${
+                    isDragOver ? "text-blue-500" : "text-gray-400"
+                  }`}
                 />
-                <label
-                  htmlFor="receipt-upload"
-                  className="cursor-pointer flex flex-col items-center justify-center space-y-2"
+                <span
+                  className={`text-sm ${
+                    isDragOver ? "text-blue-700" : "text-gray-600"
+                  }`}
                 >
-                  <Upload
-                    className={`w-8 h-8 ${
-                      isDragOver ? "text-blue-500" : "text-gray-400"
-                    }`}
-                  />
-                  <span
-                    className={`text-sm ${
-                      isDragOver ? "text-blue-700" : "text-gray-600"
-                    }`}
-                  >
-                    {isDragOver
-                      ? "Drop files here"
-                      : "Click to upload or drag and drop receipt images or PDFs"}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    Supports JPG, PNG, WebP, PDF (max 10MB each)
-                  </span>
-                </label>
-              </div>
+                  {isDragOver
+                    ? "Drop files here"
+                    : uploadedFiles.length === 0
+                    ? "Click to upload or drag and drop receipt images or PDFs"
+                    : "Click to add more files or drag and drop additional receipts"}
+                </span>
+                <span className="text-xs text-gray-500">
+                  Supports JPG, PNG, WebP, PDF (max 10MB each)
+                </span>
+              </label>
             </div>
-          )}
+          </div>
 
           {/* Show forms - either from uploaded files or manual entry */}
           <div className="space-y-6">
@@ -294,16 +332,6 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
                 <h3 className="text-lg font-medium text-gray-900">
                   Expense Forms ({uploadedFiles.length})
                 </h3>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUploadedFiles([]);
-                    setFormDataList([]);
-                  }}
-                  className="text-sm text-blue-600 hover:text-blue-700"
-                >
-                  Upload Different Files
-                </button>
               </div>
             )}
 
