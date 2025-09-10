@@ -111,6 +111,405 @@ describe("receiptParser", () => {
 
       expect(result?.date).toBe("2023-12-25");
     });
+
+    it("should handle general parsing errors", async () => {
+      const mockFile = {
+        name: "test.pdf",
+        type: "application/pdf",
+        arrayBuffer: vi.fn().mockRejectedValue(new Error("File read error")),
+      } as any;
+
+      const result = await parseReceiptFile(mockFile);
+      // When parsing fails, it should return a fallback result or null
+      expect(result).toBeTruthy(); // It returns a default result with filename info
+      expect(result?.description).toBe("UberEats Order");
+    });
+
+    it("should handle missing PDF worker configuration", async () => {
+      const mockFile = {
+        name: "Receipt_15Jan2024.pdf",
+        type: "application/pdf",
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
+      } as any;
+
+      // Clear worker src to test the configuration
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "";
+
+      const mockTextContent = {
+        items: [{ str: "Test receipt" }, { str: "Total $10.00" }],
+      };
+
+      const mockPage = {
+        getTextContent: vi.fn().mockResolvedValue(mockTextContent),
+      };
+
+      const mockPdf = {
+        numPages: 1,
+        getPage: vi.fn().mockResolvedValue(mockPage),
+      };
+
+      vi.mocked(pdfjsLib.getDocument).mockReturnValue({
+        promise: Promise.resolve(mockPdf),
+      } as any);
+
+      const result = await parseReceiptFile(mockFile);
+
+      // Should set worker src
+      expect(pdfjsLib.GlobalWorkerOptions.workerSrc).toContain(
+        "pdf.worker.mjs"
+      );
+    });
+
+    it("should handle text content without str property", async () => {
+      const mockFile = {
+        name: "Receipt_15Jan2024.pdf",
+        type: "application/pdf",
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
+      } as any;
+
+      const mockTextContent = {
+        items: [
+          { notStr: "This should be ignored" }, // Missing 'str' property
+          { str: "Total $10.00" },
+        ],
+      };
+
+      const mockPage = {
+        getTextContent: vi.fn().mockResolvedValue(mockTextContent),
+      };
+
+      const mockPdf = {
+        numPages: 1,
+        getPage: vi.fn().mockResolvedValue(mockPage),
+      };
+
+      vi.mocked(pdfjsLib.getDocument).mockReturnValue({
+        promise: Promise.resolve(mockPdf),
+      } as any);
+
+      const result = await parseReceiptFile(mockFile);
+
+      expect(result).not.toBeNull();
+    });
+
+    it("should handle multiple page PDFs", async () => {
+      const mockFile = {
+        name: "Receipt_15Jan2024.pdf",
+        type: "application/pdf",
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
+      } as any;
+
+      const mockTextContent1 = {
+        items: [{ str: "Page 1 content" }],
+      };
+
+      const mockTextContent2 = {
+        items: [
+          { str: "Here's your receipt from McDonald's and Uber Eats" },
+          { str: "Total $15.99" },
+          { str: "January 15, 2024" },
+        ],
+      };
+
+      const mockPage1 = {
+        getTextContent: vi.fn().mockResolvedValue(mockTextContent1),
+      };
+
+      const mockPage2 = {
+        getTextContent: vi.fn().mockResolvedValue(mockTextContent2),
+      };
+
+      const mockPdf = {
+        numPages: 2,
+        getPage: vi
+          .fn()
+          .mockResolvedValueOnce(mockPage1)
+          .mockResolvedValueOnce(mockPage2),
+      };
+
+      vi.mocked(pdfjsLib.getDocument).mockReturnValue({
+        promise: Promise.resolve(mockPdf),
+      } as any);
+
+      const result = await parseReceiptFile(mockFile);
+
+      expect(result).not.toBeNull();
+      expect(result?.amount).toBe("15.99");
+    });
+
+    it("should handle Canadian dollar amounts", async () => {
+      const mockFile = {
+        name: "Receipt_15Jan2024.pdf",
+        type: "application/pdf",
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
+      } as any;
+
+      const mockTextContent = {
+        items: [
+          { str: "Here's your receipt from Tim Hortons and Uber Eats" },
+          { str: "Total CA$12.75" },
+          { str: "January 15, 2024" },
+        ],
+      };
+
+      const mockPage = {
+        getTextContent: vi.fn().mockResolvedValue(mockTextContent),
+      };
+
+      const mockPdf = {
+        numPages: 1,
+        getPage: vi.fn().mockResolvedValue(mockPage),
+      };
+
+      vi.mocked(pdfjsLib.getDocument).mockReturnValue({
+        promise: Promise.resolve(mockPdf),
+      } as any);
+
+      const result = await parseReceiptFile(mockFile);
+
+      expect(result).not.toBeNull();
+      expect(result?.amount).toBe("12.75");
+    });
+
+    it("should handle restaurant with location in parentheses", async () => {
+      const mockFile = {
+        name: "Receipt_15Jan2024.pdf",
+        type: "application/pdf",
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
+      } as any;
+
+      const mockTextContent = {
+        items: [
+          {
+            str: "Here's your receipt from McDonald's (123 Main Street, Downtown) and Uber Eats",
+          },
+          { str: "Total $18.50" },
+          { str: "January 15, 2024" },
+        ],
+      };
+
+      const mockPage = {
+        getTextContent: vi.fn().mockResolvedValue(mockTextContent),
+      };
+
+      const mockPdf = {
+        numPages: 1,
+        getPage: vi.fn().mockResolvedValue(mockPage),
+      };
+
+      vi.mocked(pdfjsLib.getDocument).mockReturnValue({
+        promise: Promise.resolve(mockPdf),
+      } as any);
+
+      const result = await parseReceiptFile(mockFile);
+
+      expect(result).not.toBeNull();
+      expect(result?.description).toBe(
+        "McDonald's (123 Main Street, Downtown)"
+      );
+    });
+
+    it("should extract location from pickup address", async () => {
+      const mockFile = {
+        name: "Receipt_15Jan2024.pdf",
+        type: "application/pdf",
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
+      } as any;
+
+      const mockTextContent = {
+        items: [
+          { str: "You ordered from Pizza Place" },
+          { str: "Picked up from 456 Oak Avenue Delivered to" },
+          { str: "Total $22.00" },
+          { str: "January 15, 2024" },
+        ],
+      };
+
+      const mockPage = {
+        getTextContent: vi.fn().mockResolvedValue(mockTextContent),
+      };
+
+      const mockPdf = {
+        numPages: 1,
+        getPage: vi.fn().mockResolvedValue(mockPage),
+      };
+
+      vi.mocked(pdfjsLib.getDocument).mockReturnValue({
+        promise: Promise.resolve(mockPdf),
+      } as any);
+
+      const result = await parseReceiptFile(mockFile);
+
+      expect(result).not.toBeNull();
+      expect(result?.description).toBe("Pizza Place (456 Oak Avenue)");
+    });
+
+    it("should handle different date formats", async () => {
+      const mockFile = {
+        name: "Receipt_15Jan2024.pdf",
+        type: "application/pdf",
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
+      } as any;
+
+      const mockTextContent = {
+        items: [
+          { str: "Receipt from Restaurant" },
+          { str: "Total $15.00" },
+          { str: "12/25/2023" }, // MM/DD/YYYY format
+        ],
+      };
+
+      const mockPage = {
+        getTextContent: vi.fn().mockResolvedValue(mockTextContent),
+      };
+
+      const mockPdf = {
+        numPages: 1,
+        getPage: vi.fn().mockResolvedValue(mockPage),
+      };
+
+      vi.mocked(pdfjsLib.getDocument).mockReturnValue({
+        promise: Promise.resolve(mockPdf),
+      } as any);
+
+      const result = await parseReceiptFile(mockFile);
+
+      expect(result).not.toBeNull();
+      expect(result?.date).toBe("2023-12-25");
+    });
+
+    it("should handle invalid date parsing", async () => {
+      const mockFile = {
+        name: "Receipt_15Jan2024.pdf",
+        type: "application/pdf",
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
+      } as any;
+
+      const mockTextContent = {
+        items: [
+          { str: "Receipt from Restaurant" },
+          { str: "Total $15.00" },
+          { str: "Invalid date 99/99/9999" },
+        ],
+      };
+
+      const mockPage = {
+        getTextContent: vi.fn().mockResolvedValue(mockTextContent),
+      };
+
+      const mockPdf = {
+        numPages: 1,
+        getPage: vi.fn().mockResolvedValue(mockPage),
+      };
+
+      vi.mocked(pdfjsLib.getDocument).mockReturnValue({
+        promise: Promise.resolve(mockPdf),
+      } as any);
+
+      const result = await parseReceiptFile(mockFile);
+
+      expect(result).not.toBeNull();
+      expect(result?.date).toBe("2024-01-15"); // Should fallback to filename
+    });
+
+    it("should return null when no amount found", async () => {
+      const mockFile = {
+        name: "Receipt_15Jan2024.pdf",
+        type: "application/pdf",
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
+      } as any;
+
+      const mockTextContent = {
+        items: [
+          { str: "Here's your receipt from Restaurant and Uber Eats" },
+          { str: "No amount information here" },
+          { str: "January 15, 2024" },
+        ],
+      };
+
+      const mockPage = {
+        getTextContent: vi.fn().mockResolvedValue(mockTextContent),
+      };
+
+      const mockPdf = {
+        numPages: 1,
+        getPage: vi.fn().mockResolvedValue(mockPage),
+      };
+
+      vi.mocked(pdfjsLib.getDocument).mockReturnValue({
+        promise: Promise.resolve(mockPdf),
+      } as any);
+
+      const result = await parseReceiptFile(mockFile);
+
+      expect(result).toBeNull();
+    });
+
+    it("should handle UberEats text parsing errors", async () => {
+      const mockFile = {
+        name: "Receipt_15Jan2024.pdf",
+        type: "application/pdf",
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
+      } as any;
+
+      const mockTextContent = {
+        items: [{ str: "Some text that causes parsing to throw" }],
+      };
+
+      const mockPage = {
+        getTextContent: vi.fn().mockResolvedValue(mockTextContent),
+      };
+
+      const mockPdf = {
+        numPages: 1,
+        getPage: vi.fn().mockResolvedValue(mockPage),
+      };
+
+      vi.mocked(pdfjsLib.getDocument).mockReturnValue({
+        promise: Promise.resolve(mockPdf),
+      } as any);
+
+      // Mock console.error to avoid test output noise
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
+      const result = await parseReceiptFile(mockFile);
+
+      consoleSpy.mockRestore();
+    });
+
+    it("should handle filename date extraction failure", async () => {
+      const mockFile = {
+        name: "invalid-filename.pdf",
+        type: "application/pdf",
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
+      } as any;
+
+      vi.mocked(pdfjsLib.getDocument).mockReturnValue({
+        promise: Promise.reject(new Error("PDF parsing failed")),
+      } as any);
+
+      const result = await parseReceiptFile(mockFile);
+
+      expect(result?.date).toBe(new Date().toISOString().split("T")[0]); // Should use current date
+    });
+
+    it("should handle filename date extraction with invalid month", async () => {
+      const mockFile = {
+        name: "Receipt_15Xyz2024.pdf", // Invalid month
+        type: "application/pdf",
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
+      } as any;
+
+      vi.mocked(pdfjsLib.getDocument).mockReturnValue({
+        promise: Promise.reject(new Error("PDF parsing failed")),
+      } as any);
+
+      const result = await parseReceiptFile(mockFile);
+
+      expect(result?.date).toBe(new Date().toISOString().split("T")[0]); // Should use current date
+    });
   });
 
   describe("isValidReceiptFile", () => {

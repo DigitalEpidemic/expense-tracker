@@ -61,11 +61,14 @@ console.log = (...args: any[]) => {
     message.includes("Image parsing not yet implemented") ||
     message.includes("PDF loaded successfully") ||
     message.includes("Page 1 text:") ||
+    message.includes("Page 2 text:") ||
     message.includes("Full extracted text:") ||
     message.includes("Parsing UberEats text:") ||
     message.includes("Found amount:") ||
     message.includes("Found restaurant") ||
     message.includes("Found date:") ||
+    message.includes("Found location from address:") ||
+    message.includes("Could not extract amount from receipt text") ||
     message.includes("Successfully parsed receipt:")
   ) {
     return;

@@ -1,22 +1,25 @@
-import React from 'react';
-import { LogIn } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
+import { LogIn } from "lucide-react";
+import React from "react";
+import { useAuth } from "../hooks/useAuth";
 
 const AuthScreen: React.FC = () => {
   const { signInWithGoogle } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div
+      data-testid="auth-screen"
+      className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4"
+    >
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
         <div className="text-center">
           <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <LogIn className="w-8 h-8 text-blue-600" />
           </div>
-          
+
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
             Welcome to Expense Tracker
           </h1>
-          
+
           <p className="text-gray-600 mb-8">
             Track your expenses, manage reimbursements, and stay on budget.
           </p>

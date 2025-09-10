@@ -102,7 +102,10 @@ function App() {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div
+          data-testid="loading-spinner"
+          className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
+        ></div>
       </div>
     );
   }
@@ -147,7 +150,10 @@ function App() {
         {/* Expenses List */}
         {expensesLoading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div
+              data-testid="loading-spinner"
+              className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
+            ></div>
           </div>
         ) : monthlyGroups.length === 0 ? (
           <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
