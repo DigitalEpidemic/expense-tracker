@@ -120,9 +120,9 @@ function App() {
     <div className="min-h-screen bg-gray-50">
       <Header />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* Summary Cards */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <SummaryCards
             total={totals.total}
             reimbursed={totals.reimbursed}
@@ -131,7 +131,7 @@ function App() {
         </div>
 
         {/* Actions and Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div className="flex-1">
             <FilterBar filter={filter} onFilterChange={setFilter} />
           </div>
@@ -205,34 +205,49 @@ function App() {
                 key={group.monthYear}
                 className="bg-white rounded-lg border border-gray-200 overflow-hidden"
               >
-                <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                  <div className="flex items-center justify-between">
+                <div className="bg-gray-50 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
                     <h2 className="text-lg font-medium text-gray-900">
                       {group.monthYear}
                     </h2>
-                    <div className="flex items-center gap-4 text-sm">
-                      <span className="text-gray-600">
-                        Total:{" "}
-                        <span className="font-medium text-gray-900">
+                    <div className="grid grid-cols-3 sm:flex sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm sm:text-sm">
+                      <div className="text-center sm:text-left">
+                        <div className="text-gray-500 text-xs sm:hidden">
+                          Total
+                        </div>
+                        <div className="font-bold sm:font-medium text-gray-900 text-sm sm:text-sm">
+                          <span className="hidden sm:inline text-gray-600 font-normal">
+                            Total:{" "}
+                          </span>
                           {formatCurrency(group.total)}
-                        </span>
-                      </span>
-                      <span className="text-green-600">
-                        Reimbursed:{" "}
-                        <span className="font-medium">
+                        </div>
+                      </div>
+                      <div className="text-center sm:text-left">
+                        <div className="text-gray-500 text-xs sm:hidden">
+                          Reimbursed
+                        </div>
+                        <div className="font-bold sm:font-medium text-green-600 text-sm sm:text-sm">
+                          <span className="hidden sm:inline text-green-600 font-normal">
+                            Reimbursed:{" "}
+                          </span>
                           {formatCurrency(group.reimbursed)}
-                        </span>
-                      </span>
-                      <span className="text-amber-600">
-                        Pending:{" "}
-                        <span className="font-medium">
+                        </div>
+                      </div>
+                      <div className="text-center sm:text-left">
+                        <div className="text-gray-500 text-xs sm:hidden">
+                          Pending
+                        </div>
+                        <div className="font-bold sm:font-medium text-amber-600 text-sm sm:text-sm">
+                          <span className="hidden sm:inline text-amber-600 font-normal">
+                            Pending:{" "}
+                          </span>
                           {formatCurrency(group.pending)}
-                        </span>
-                      </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                   <ExpenseList
                     expenses={group.expenses}
                     onEdit={handleEdit}

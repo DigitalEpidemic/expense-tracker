@@ -127,64 +127,73 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
         {expenses.map((expense) => (
           <div
             key={expense.id}
-            className="bg-white rounded-lg border border-gray-200 p-4"
+            className="bg-white rounded-lg border border-gray-200 p-3"
           >
-            <div className="flex items-start justify-between mb-3">
+            <div className="flex items-start justify-between mb-2">
               <div className="flex-1">
                 <h3 className="font-medium text-gray-900 mb-1">
                   {expense.description}
                 </h3>
                 <p className="text-sm text-gray-500">{expense.category}</p>
               </div>
-              <div className="flex items-center gap-2 ml-3">
+              <div className="flex items-center gap-2 ml-2">
                 <button
                   onClick={() =>
                     onToggleReimbursed(expense.id, !expense.reimbursed)
                   }
-                  className={`p-1 rounded transition-colors duration-200 ${
+                  className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors duration-200 ${
                     expense.reimbursed
-                      ? "text-green-600 hover:bg-green-100"
-                      : "text-gray-400 hover:bg-gray-100"
+                      ? "bg-green-100 text-green-700 hover:bg-green-200"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
                   {expense.reimbursed ? (
-                    <Check className="w-5 h-5" />
+                    <>
+                      <Check className="w-3 h-3" />
+                      <span>Reimbursed</span>
+                    </>
                   ) : (
-                    <X className="w-5 h-5" />
+                    <>
+                      <X className="w-3 h-3" />
+                      <span>Pending</span>
+                    </>
                   )}
                 </button>
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center justify-between text-sm mb-2">
               <span className="text-gray-500">{formatDate(expense.date)}</span>
-              <span className="font-medium text-gray-900">
+              <span className="font-bold text-gray-900 text-base">
                 {formatCurrency(expense.amount)}
               </span>
             </div>
 
-            <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-gray-100">
-              <button
-                onClick={() => onDuplicate(expense)}
-                className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors duration-200"
-                title="Duplicate expense"
-              >
-                <Copy className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => onEdit(expense)}
-                className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors duration-200"
-                title="Edit expense"
-              >
-                <Edit2 className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => onDelete(expense.id)}
-                className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors duration-200"
-                title="Delete expense"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+            <div className="flex items-center justify-between gap-2 pt-2 border-t border-gray-100">
+              <div className="text-xs text-gray-500">Actions:</div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => onDuplicate(expense)}
+                  className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-green-600 bg-green-50 hover:bg-green-100 rounded transition-colors duration-200"
+                >
+                  <Copy className="w-3 h-3" />
+                  <span>Copy</span>
+                </button>
+                <button
+                  onClick={() => onEdit(expense)}
+                  className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded transition-colors duration-200"
+                >
+                  <Edit2 className="w-3 h-3" />
+                  <span>Edit</span>
+                </button>
+                <button
+                  onClick={() => onDelete(expense.id)}
+                  className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors duration-200"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  <span>Delete</span>
+                </button>
+              </div>
             </div>
           </div>
         ))}
