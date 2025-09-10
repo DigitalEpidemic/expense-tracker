@@ -59,11 +59,21 @@ describe("useExpenses", () => {
     vi.clearAllMocks();
 
     // Setup default mocks
-    vi.mocked(firestore.collection).mockReturnValue("collection" as any);
-    vi.mocked(firestore.where).mockReturnValue("where" as any);
-    vi.mocked(firestore.orderBy).mockReturnValue("orderBy" as any);
-    vi.mocked(firestore.query).mockReturnValue("query" as any);
-    vi.mocked(firestore.doc).mockReturnValue("docRef" as any);
+    vi.mocked(firestore.collection).mockReturnValue(
+      "collection" as unknown as firestore.CollectionReference
+    );
+    vi.mocked(firestore.where).mockReturnValue(
+      "where" as unknown as firestore.QueryConstraint
+    );
+    vi.mocked(firestore.orderBy).mockReturnValue(
+      "orderBy" as unknown as firestore.QueryConstraint
+    );
+    vi.mocked(firestore.query).mockReturnValue(
+      "query" as unknown as firestore.Query
+    );
+    vi.mocked(firestore.doc).mockReturnValue(
+      "docRef" as unknown as firestore.DocumentReference
+    );
   });
 
   it("should initialize with empty expenses and loading state", () => {
@@ -91,18 +101,20 @@ describe("useExpenses", () => {
 
   it("should fetch expenses when userId is provided", async () => {
     const mockSnapshot = {
-      forEach: vi.fn((callback: any) => {
-        mockExpensesData.forEach((expense, index) => {
-          callback({
-            id: expense.id,
-            data: () => expense,
+      forEach: vi.fn(
+        (callback: (doc: { id: string; data: () => unknown }) => void) => {
+          mockExpensesData.forEach((expense) => {
+            callback({
+              id: expense.id,
+              data: () => expense,
+            });
           });
-        });
-      }),
+        }
+      ),
     };
 
     vi.mocked(firestore.onSnapshot).mockImplementation(
-      (_query: any, callback: any) => {
+      (_query: unknown, callback: (snapshot: unknown) => void) => {
         setTimeout(() => callback(mockSnapshot), 0);
         return vi.fn(); // unsubscribe function
       }
@@ -119,7 +131,9 @@ describe("useExpenses", () => {
   });
 
   it("should add expense successfully", async () => {
-    vi.mocked(firestore.addDoc).mockResolvedValue({} as any);
+    vi.mocked(firestore.addDoc).mockResolvedValue(
+      {} as unknown as firestore.DocumentReference
+    );
 
     const { result } = renderHook(() => useExpenses("user1"));
 
@@ -336,10 +350,12 @@ describe("useExpenses", () => {
       }),
     };
 
-    vi.mocked(firestore.onSnapshot).mockImplementation((query, callback) => {
-      callback(mockSnapshot);
-      return mockUnsubscribe;
-    });
+    vi.mocked(firestore.onSnapshot).mockImplementation(
+      (_query: unknown, callback: (snapshot: unknown) => void) => {
+        callback(mockSnapshot);
+        return mockUnsubscribe;
+      }
+    );
 
     const { result } = renderHook(() => useExpenses("user1"));
 

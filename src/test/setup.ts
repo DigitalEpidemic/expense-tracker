@@ -54,7 +54,7 @@ vi.mock("pdfjs-dist", () => ({
 const originalConsoleLog = console.log;
 const originalConsoleError = console.error;
 
-console.log = (...args: any[]) => {
+console.log = (...args: unknown[]) => {
   const message = args.join(" ");
   // Only suppress specific receiptParser logs during tests
   if (
@@ -76,7 +76,7 @@ console.log = (...args: any[]) => {
   originalConsoleLog(...args);
 };
 
-console.error = (...args: any[]) => {
+console.error = (...args: unknown[]) => {
   const message = args.join(" ");
   // Keep intentional test error logs from showing in stderr (these are expected)
   if (

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import AuthScreen from "./AuthScreen";
 
 // Mock the useAuth hook
@@ -76,7 +76,7 @@ describe("AuthScreen", () => {
   });
 
   it("should render Google logo in the sign-in button", () => {
-    const { container } = render(<AuthScreen />);
+    render(<AuthScreen />);
 
     // Google logo SVG should be present in the button
     const button = screen.getByText("Continue with Google").closest("button");

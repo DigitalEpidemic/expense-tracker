@@ -75,7 +75,7 @@ export const useExpenses = (userId: string | null) => {
   ) => {
     try {
       const docRef = doc(db, "expenses", id);
-      const updateData: any = {
+      const updateData: Record<string, unknown> = {
         ...expenseData,
         updatedAt: Timestamp.fromDate(new Date()),
       };

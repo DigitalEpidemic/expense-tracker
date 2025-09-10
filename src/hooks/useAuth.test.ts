@@ -41,9 +41,14 @@ describe("useAuth", () => {
     const mockUser = { email: "test@example.com", uid: "123" };
 
     vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
-      (_auth: any, callback: any) => {
+      (
+        _auth: firebaseAuth.Auth,
+        nextOrObserver: firebaseAuth.NextOrObserver<firebaseAuth.User>
+      ) => {
         // Simulate auth state change
-        setTimeout(() => callback(mockUser), 0);
+        if (typeof nextOrObserver === "function") {
+          setTimeout(() => nextOrObserver(mockUser as firebaseAuth.User), 0);
+        }
         return vi.fn();
       }
     );
@@ -58,9 +63,14 @@ describe("useAuth", () => {
 
   it("should set loading to false when no user", async () => {
     vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
-      (_auth: any, callback: any) => {
+      (
+        _auth: firebaseAuth.Auth,
+        nextOrObserver: firebaseAuth.NextOrObserver<firebaseAuth.User>
+      ) => {
         // Simulate auth state change with no user
-        setTimeout(() => callback(null), 0);
+        if (typeof nextOrObserver === "function") {
+          setTimeout(() => nextOrObserver(null), 0);
+        }
         return vi.fn();
       }
     );
@@ -77,7 +87,9 @@ describe("useAuth", () => {
     vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(() =>
       vi.fn()
     );
-    vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue({} as any);
+    vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue(
+      {} as firebaseAuth.UserCredential
+    );
 
     const { result } = renderHook(() => useAuth());
 
