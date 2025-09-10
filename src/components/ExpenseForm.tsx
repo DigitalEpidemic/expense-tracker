@@ -224,7 +224,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
           <button
@@ -287,9 +287,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
             </div>
           )}
 
-          {/* Multiple Files - Show all forms */}
-          {uploadedFiles.length > 1 ? (
-            <div className="space-y-6">
+          {/* Show forms - either from uploaded files or manual entry */}
+          <div className="space-y-6">
+            {uploadedFiles.length > 1 && (
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium text-gray-900">
                   Expense Forms ({uploadedFiles.length})
@@ -305,30 +305,46 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
                   Upload Different Files
                 </button>
               </div>
+            )}
 
-              {formDataList.map((formData, index) => (
+            {/* Parsing Status */}
+            {isParsingReceipt && (
+              <div className="mb-4 flex items-center space-x-2 text-blue-600">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm">Parsing receipt...</span>
+              </div>
+            )}
+
+            {(uploadedFiles.length > 1 ? formDataList : [formData]).map(
+              (currentFormData, index) => (
                 <div
                   key={index}
                   className="border border-gray-200 rounded-lg p-4 bg-gray-50"
                 >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-2">
-                      <FileText className="w-5 h-5 text-gray-500" />
-                      <span className="font-medium text-gray-900">
-                        Expense {index + 1}: {uploadedFiles[index]?.name}
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        ({formatFileSize(uploadedFiles[index]?.size || 0)})
-                      </span>
+                  {uploadedFiles.length > 0 && (
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center space-x-2">
+                        <FileText className="w-5 h-5 text-gray-500" />
+                        <span className="font-medium text-gray-900">
+                          {uploadedFiles.length > 1
+                            ? `Expense ${index + 1}: `
+                            : ""}
+                          {uploadedFiles[index]?.name}
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          ({formatFileSize(uploadedFiles[index]?.size || 0)})
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeFile(index)}
+                        className="text-red-500 hover:text-red-700"
+                        disabled={isParsingReceipt}
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => removeFile(index)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
+                  )}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -338,8 +354,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
                       <input
                         type="text"
                         name="description"
-                        value={formData.description}
-                        onChange={(e) => handleMultiFormChange(index, e)}
+                        value={currentFormData.description}
+                        onChange={(e) =>
+                          uploadedFiles.length > 1
+                            ? handleMultiFormChange(index, e)
+                            : handleChange(e)
+                        }
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="Enter expense description"
                         required
@@ -353,8 +373,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
                       <input
                         type="number"
                         name="amount"
-                        value={formData.amount}
-                        onChange={(e) => handleMultiFormChange(index, e)}
+                        value={currentFormData.amount}
+                        onChange={(e) =>
+                          uploadedFiles.length > 1
+                            ? handleMultiFormChange(index, e)
+                            : handleChange(e)
+                        }
                         step="0.01"
                         min="0"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -370,8 +394,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
                       <input
                         type="date"
                         name="date"
-                        value={formData.date}
-                        onChange={(e) => handleMultiFormChange(index, e)}
+                        value={currentFormData.date}
+                        onChange={(e) =>
+                          uploadedFiles.length > 1
+                            ? handleMultiFormChange(index, e)
+                            : handleChange(e)
+                        }
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         required
                       />
@@ -383,8 +411,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
                       </label>
                       <select
                         name="category"
-                        value={formData.category}
-                        onChange={(e) => handleMultiFormChange(index, e)}
+                        value={currentFormData.category}
+                        onChange={(e) =>
+                          uploadedFiles.length > 1
+                            ? handleMultiFormChange(index, e)
+                            : handleChange(e)
+                        }
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         required
                       >
@@ -402,8 +434,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
                         <input
                           type="checkbox"
                           name="reimbursed"
-                          checked={formData.reimbursed}
-                          onChange={(e) => handleMultiFormChange(index, e)}
+                          checked={currentFormData.reimbursed}
+                          onChange={(e) =>
+                            uploadedFiles.length > 1
+                              ? handleMultiFormChange(index, e)
+                              : handleChange(e)
+                          }
                           className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                         />
                         <label className="text-sm font-medium text-gray-700">
@@ -413,142 +449,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            /* Single File - Show regular form */
-            <>
-              {/* Uploaded Files */}
-              {uploadedFiles.length > 0 && (
-                <div className="mb-4">
-                  <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                    <div className="flex items-center space-x-2">
-                      <FileText className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm text-gray-700">
-                        {uploadedFiles[0].name} (
-                        {formatFileSize(uploadedFiles[0].size)})
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeFile(0)}
-                      className="text-red-500 hover:text-red-700"
-                      disabled={isParsingReceipt}
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Parsing Status */}
-              {isParsingReceipt && (
-                <div className="mb-4 flex items-center space-x-2 text-blue-600">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-sm">Parsing receipt...</span>
-                </div>
-              )}
-
-              <div>
-                <label
-                  htmlFor="description"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Description
-                </label>
-                <input
-                  type="text"
-                  id="description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                  placeholder="Enter expense description"
-                  required
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="amount"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Amount
-                </label>
-                <input
-                  type="number"
-                  id="amount"
-                  name="amount"
-                  value={formData.amount}
-                  onChange={handleChange}
-                  step="0.01"
-                  min="0"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                  placeholder="0.00"
-                  required
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="date"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Date
-                </label>
-                <input
-                  type="date"
-                  id="date"
-                  name="date"
-                  value={formData.date}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                  required
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="category"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Category
-                </label>
-                <select
-                  id="category"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                  required
-                >
-                  <option value="">Select category</option>
-                  {categories.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="reimbursed"
-                  name="reimbursed"
-                  checked={formData.reimbursed}
-                  onChange={handleChange}
-                  className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                />
-                <label
-                  htmlFor="reimbursed"
-                  className="text-sm font-medium text-gray-700"
-                >
-                  Already reimbursed
-                </label>
-              </div>
-            </>
-          )}
+              )
+            )}
+          </div>
 
           <div className="flex gap-3 pt-4">
             <button
