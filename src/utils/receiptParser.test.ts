@@ -1,4 +1,5 @@
 import * as pdfjsLib from "pdfjs-dist";
+import { PDFDocumentLoadingTask } from "pdfjs-dist";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   formatFileSize,
@@ -39,7 +40,7 @@ describe("receiptParser", () => {
         name: "Receipt_15Jan2024.pdf",
         type: "application/pdf",
         arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
-      } as File;
+      } as unknown as File;
 
       // Mock PDF.js response with UberEats receipt text
       const mockTextContent = {
@@ -63,7 +64,7 @@ describe("receiptParser", () => {
 
       vi.mocked(pdfjsLib.getDocument).mockReturnValue({
         promise: Promise.resolve(mockPdf),
-      } as unknown);
+      } as unknown as PDFDocumentLoadingTask);
 
       const result = await parseReceiptFile(mockFile);
 
@@ -80,11 +81,11 @@ describe("receiptParser", () => {
         name: "Receipt_15Jan2024.pdf",
         type: "application/pdf",
         arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
-      } as File;
+      } as unknown as File;
 
       vi.mocked(pdfjsLib.getDocument).mockReturnValue({
         promise: Promise.reject(new Error("PDF parsing failed")),
-      } as unknown);
+      } as unknown as PDFDocumentLoadingTask);
 
       const result = await parseReceiptFile(mockFile);
 
@@ -101,11 +102,11 @@ describe("receiptParser", () => {
         name: "Receipt_25Dec2023.pdf",
         type: "application/pdf",
         arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
-      } as File;
+      } as unknown as File;
 
       vi.mocked(pdfjsLib.getDocument).mockReturnValue({
         promise: Promise.reject(new Error("PDF parsing failed")),
-      } as unknown);
+      } as unknown as PDFDocumentLoadingTask);
 
       const result = await parseReceiptFile(mockFile);
 
@@ -117,7 +118,7 @@ describe("receiptParser", () => {
         name: "test.pdf",
         type: "application/pdf",
         arrayBuffer: vi.fn().mockRejectedValue(new Error("File read error")),
-      } as File;
+      } as unknown as File;
 
       const result = await parseReceiptFile(mockFile);
       // When parsing fails, it should return a fallback result or null
@@ -130,7 +131,7 @@ describe("receiptParser", () => {
         name: "Receipt_15Jan2024.pdf",
         type: "application/pdf",
         arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
-      } as File;
+      } as unknown as File;
 
       // Clear worker src to test the configuration
       pdfjsLib.GlobalWorkerOptions.workerSrc = "";
@@ -150,7 +151,7 @@ describe("receiptParser", () => {
 
       vi.mocked(pdfjsLib.getDocument).mockReturnValue({
         promise: Promise.resolve(mockPdf),
-      } as unknown);
+      } as unknown as PDFDocumentLoadingTask);
 
       await parseReceiptFile(mockFile);
 
@@ -165,7 +166,7 @@ describe("receiptParser", () => {
         name: "Receipt_15Jan2024.pdf",
         type: "application/pdf",
         arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
-      } as File;
+      } as unknown as File;
 
       const mockTextContent = {
         items: [
@@ -185,7 +186,7 @@ describe("receiptParser", () => {
 
       vi.mocked(pdfjsLib.getDocument).mockReturnValue({
         promise: Promise.resolve(mockPdf),
-      } as unknown);
+      } as unknown as PDFDocumentLoadingTask);
 
       const result = await parseReceiptFile(mockFile);
 
@@ -197,7 +198,7 @@ describe("receiptParser", () => {
         name: "Receipt_15Jan2024.pdf",
         type: "application/pdf",
         arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
-      } as File;
+      } as unknown as File;
 
       const mockTextContent1 = {
         items: [{ str: "Page 1 content" }],
@@ -229,7 +230,7 @@ describe("receiptParser", () => {
 
       vi.mocked(pdfjsLib.getDocument).mockReturnValue({
         promise: Promise.resolve(mockPdf),
-      } as unknown);
+      } as unknown as PDFDocumentLoadingTask);
 
       const result = await parseReceiptFile(mockFile);
 
@@ -242,7 +243,7 @@ describe("receiptParser", () => {
         name: "Receipt_15Jan2024.pdf",
         type: "application/pdf",
         arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
-      } as File;
+      } as unknown as File;
 
       const mockTextContent = {
         items: [
@@ -263,7 +264,7 @@ describe("receiptParser", () => {
 
       vi.mocked(pdfjsLib.getDocument).mockReturnValue({
         promise: Promise.resolve(mockPdf),
-      } as unknown);
+      } as unknown as PDFDocumentLoadingTask);
 
       const result = await parseReceiptFile(mockFile);
 
@@ -276,7 +277,7 @@ describe("receiptParser", () => {
         name: "Receipt_15Jan2024.pdf",
         type: "application/pdf",
         arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
-      } as File;
+      } as unknown as File;
 
       const mockTextContent = {
         items: [
@@ -299,7 +300,7 @@ describe("receiptParser", () => {
 
       vi.mocked(pdfjsLib.getDocument).mockReturnValue({
         promise: Promise.resolve(mockPdf),
-      } as unknown);
+      } as unknown as PDFDocumentLoadingTask);
 
       const result = await parseReceiptFile(mockFile);
 
@@ -314,7 +315,7 @@ describe("receiptParser", () => {
         name: "Receipt_15Jan2024.pdf",
         type: "application/pdf",
         arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
-      } as File;
+      } as unknown as File;
 
       const mockTextContent = {
         items: [
@@ -336,7 +337,7 @@ describe("receiptParser", () => {
 
       vi.mocked(pdfjsLib.getDocument).mockReturnValue({
         promise: Promise.resolve(mockPdf),
-      } as unknown);
+      } as unknown as PDFDocumentLoadingTask);
 
       const result = await parseReceiptFile(mockFile);
 
@@ -349,7 +350,7 @@ describe("receiptParser", () => {
         name: "Receipt_15Jan2024.pdf",
         type: "application/pdf",
         arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
-      } as File;
+      } as unknown as File;
 
       const mockTextContent = {
         items: [
@@ -370,7 +371,7 @@ describe("receiptParser", () => {
 
       vi.mocked(pdfjsLib.getDocument).mockReturnValue({
         promise: Promise.resolve(mockPdf),
-      } as unknown);
+      } as unknown as PDFDocumentLoadingTask);
 
       const result = await parseReceiptFile(mockFile);
 
@@ -383,7 +384,7 @@ describe("receiptParser", () => {
         name: "Receipt_15Jan2024.pdf",
         type: "application/pdf",
         arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
-      } as File;
+      } as unknown as File;
 
       const mockTextContent = {
         items: [
@@ -404,7 +405,7 @@ describe("receiptParser", () => {
 
       vi.mocked(pdfjsLib.getDocument).mockReturnValue({
         promise: Promise.resolve(mockPdf),
-      } as unknown);
+      } as unknown as PDFDocumentLoadingTask);
 
       const result = await parseReceiptFile(mockFile);
 
@@ -417,7 +418,7 @@ describe("receiptParser", () => {
         name: "Receipt_15Jan2024.pdf",
         type: "application/pdf",
         arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
-      } as File;
+      } as unknown as File;
 
       const mockTextContent = {
         items: [
@@ -438,7 +439,7 @@ describe("receiptParser", () => {
 
       vi.mocked(pdfjsLib.getDocument).mockReturnValue({
         promise: Promise.resolve(mockPdf),
-      } as unknown);
+      } as unknown as PDFDocumentLoadingTask);
 
       const result = await parseReceiptFile(mockFile);
 
@@ -450,7 +451,7 @@ describe("receiptParser", () => {
         name: "Receipt_15Jan2024.pdf",
         type: "application/pdf",
         arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
-      } as File;
+      } as unknown as File;
 
       const mockTextContent = {
         items: [{ str: "Some text that causes parsing to throw" }],
@@ -467,7 +468,7 @@ describe("receiptParser", () => {
 
       vi.mocked(pdfjsLib.getDocument).mockReturnValue({
         promise: Promise.resolve(mockPdf),
-      } as unknown);
+      } as unknown as PDFDocumentLoadingTask);
 
       // Mock console.error to avoid test output noise
       const consoleSpy = vi
@@ -484,11 +485,11 @@ describe("receiptParser", () => {
         name: "invalid-filename.pdf",
         type: "application/pdf",
         arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
-      } as File;
+      } as unknown as File;
 
       vi.mocked(pdfjsLib.getDocument).mockReturnValue({
         promise: Promise.reject(new Error("PDF parsing failed")),
-      } as unknown);
+      } as unknown as PDFDocumentLoadingTask);
 
       const result = await parseReceiptFile(mockFile);
 
@@ -500,11 +501,11 @@ describe("receiptParser", () => {
         name: "Receipt_15Xyz2024.pdf", // Invalid month
         type: "application/pdf",
         arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
-      } as File;
+      } as unknown as File;
 
       vi.mocked(pdfjsLib.getDocument).mockReturnValue({
         promise: Promise.reject(new Error("PDF parsing failed")),
-      } as unknown);
+      } as unknown as PDFDocumentLoadingTask);
 
       const result = await parseReceiptFile(mockFile);
 
@@ -737,13 +738,13 @@ describe("receiptParser", () => {
 
       vi.mocked(pdfjsLib.getDocument).mockReturnValue({
         promise: Promise.resolve(mockDocument),
-      } as unknown);
+      } as unknown as PDFDocumentLoadingTask);
 
       // Spy on Date constructor to cause an error in date parsing
       const originalDate = global.Date;
       global.Date = vi.fn().mockImplementation(() => {
         throw new Error("Date parsing error");
-      }) as unknown;
+      }) as unknown as typeof Date;
 
       // This will also mock the static methods like toISOString
       global.Date.prototype = originalDate.prototype;
@@ -799,7 +800,7 @@ describe("receiptParser", () => {
 
       vi.mocked(pdfjsLib.getDocument).mockReturnValue({
         promise: Promise.resolve(mockDocument),
-      } as unknown);
+      } as unknown as PDFDocumentLoadingTask);
 
       // Create a spy to monitor extractDateFromFileName being called
       const consoleErrorSpy = vi
