@@ -746,9 +746,6 @@ describe("receiptParser", () => {
         throw new Error("Date parsing error");
       }) as unknown as typeof Date;
 
-      // This will also mock the static methods like toISOString
-      global.Date.prototype = originalDate.prototype;
-
       // Create a spy to monitor console.error being called (lines 272-274)
       const consoleErrorSpy = vi
         .spyOn(console, "error")
