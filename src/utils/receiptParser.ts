@@ -130,8 +130,6 @@ export class UberEatsReceiptParser extends BaseReceiptParser {
 
   parse(text: string, fileName: string): ParsedReceiptData | null {
     try {
-      console.log("Parsing UberEats text:", text.substring(0, 500));
-
       const cleanText = text.replace(/\s+/g, " ").trim();
 
       let amount = "";
@@ -278,12 +276,6 @@ export class UberEatsReceiptParser extends BaseReceiptParser {
         return null;
       }
 
-      console.log("Successfully parsed receipt:", {
-        description,
-        amount,
-        date,
-      });
-
       return {
         description,
         amount,
@@ -318,14 +310,17 @@ export class DoorDashReceiptParser extends BaseReceiptParser {
 
   parse(text: string, fileName: string): ParsedReceiptData | null {
     try {
-      console.log("Parsing DoorDash text:", text.substring(0, 500));
+      // console.log("Parsing DoorDash text:", text.substring(0, 1000));
 
       const cleanText = text.replace(/\s+/g, " ").trim();
 
       let amount = "";
       const totalPatterns = [
-        /Total\s+\$(\d+\.\d{2})/i,
+        /Total:\s*(?:CA\$|\$)(\d+\.\d{2})/i,
+        /Total Charged\s+(?:CA\$|\$)(\d+\.\d{2})/i,
+        /Total\s+(?:CA\$|\$)(\d+\.\d{2})/i,
         /Total:\s*\$(\d+\.\d{2})/i,
+        /Total\s+\$(\d+\.\d{2})/i,
         /Grand\s+Total\s*\$(\d+\.\d{2})/i,
         /Order\s+Total\s*\$(\d+\.\d{2})/i,
         /\$(\d+\.\d{2})\s*(?:Total|Charged|Paid)/i,
@@ -343,8 +338,13 @@ export class DoorDashReceiptParser extends BaseReceiptParser {
 
       let description = "";
       const restaurantPatterns = [
-        /from\s+(.+?)(?:\s+Order|\s*$)/i,
-        /(.+?)\s+Order/i,
+        /Order Confirmation for \w+ from (.+?)$/im,
+        /Subject:\s*Order Confirmation for \w+ from (.+?)$/im,
+        /Paid with .+?\d{4}\s+(.+?)\s+Total:/i, // Visa Ending in 1234 Restuarant
+        /Paid with Apple Pay\s+(.+?)\s+Total:/i, // Apple Pay Restaurant
+        /Paid with .+?\s+(.+?)\s+Total:/i, // Other payment methods
+        /(.+?)\s+Total:/i,
+        /from\s+(.+?)(?:\s+Total|\s+Order|\s*$)/i,
         /Restaurant:\s*(.+?)(?:\n|\r|$)/i,
         /Delivery\s+from\s+(.+?)(?:\n|\r|$)/i,
       ];
@@ -368,6 +368,8 @@ export class DoorDashReceiptParser extends BaseReceiptParser {
 
       let date = "";
       const datePatterns = [
+        /Date:\s*(\w{3})\s+(\d{1,2}),?\s+(\d{4})/i,
+        /(\w{3})\s+(\d{1,2}),?\s+(\d{4})\s+at\s+\d{1,2}:\d{2}:\d{2}/i,
         /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(\d{4})/i,
         /(\d{1,2}\/\d{1,2}\/\d{4})/,
         /(\d{4}-\d{2}-\d{2})/,
@@ -380,6 +382,57 @@ export class DoorDashReceiptParser extends BaseReceiptParser {
           try {
             let parsedDate: Date;
             if (pattern === datePatterns[0]) {
+              // Handle "Date: Mar 5, 2025" format
+              const monthAbbr = match[1];
+              const day = parseInt(match[2]);
+              const year = parseInt(match[3]);
+              const monthMap: { [key: string]: number } = {
+                Jan: 0,
+                Feb: 1,
+                Mar: 2,
+                Apr: 3,
+                May: 4,
+                Jun: 5,
+                Jul: 6,
+                Aug: 7,
+                Sep: 8,
+                Oct: 9,
+                Nov: 10,
+                Dec: 11,
+              };
+              const monthIndex = monthMap[monthAbbr];
+              if (monthIndex !== undefined) {
+                parsedDate = new Date(year, monthIndex, day);
+              } else {
+                continue;
+              }
+            } else if (pattern === datePatterns[1]) {
+              // Handle "Mar 5, 2025 at" format
+              const monthAbbr = match[1];
+              const day = parseInt(match[2]);
+              const year = parseInt(match[3]);
+              const monthMap: { [key: string]: number } = {
+                Jan: 0,
+                Feb: 1,
+                Mar: 2,
+                Apr: 3,
+                May: 4,
+                Jun: 5,
+                Jul: 6,
+                Aug: 7,
+                Sep: 8,
+                Oct: 9,
+                Nov: 10,
+                Dec: 11,
+              };
+              const monthIndex = monthMap[monthAbbr];
+              if (monthIndex !== undefined) {
+                parsedDate = new Date(year, monthIndex, day);
+              } else {
+                continue;
+              }
+            } else if (pattern === datePatterns[2]) {
+              // Handle full month names
               const monthName = match[1];
               const day = parseInt(match[2]);
               const year = parseInt(match[3]);
@@ -398,7 +451,7 @@ export class DoorDashReceiptParser extends BaseReceiptParser {
                 "December",
               ].indexOf(monthName);
               parsedDate = new Date(year, monthIndex, day);
-            } else if (pattern === datePatterns[3]) {
+            } else if (pattern === datePatterns[5]) {
               const month = parseInt(match[1]);
               const day = parseInt(match[2]);
               let year = parseInt(match[3]);
@@ -420,19 +473,15 @@ export class DoorDashReceiptParser extends BaseReceiptParser {
       }
 
       if (!date) {
+        console.log("No date found in text, checking filename:", fileName);
         date = this.extractDateFromFileName(fileName) || this.getCurrentDate();
+        console.log("Final date used:", date);
       }
 
       if (!amount) {
         console.log("Could not extract amount from DoorDash receipt text");
         return null;
       }
-
-      console.log("Successfully parsed DoorDash receipt:", {
-        description,
-        amount,
-        date,
-      });
 
       return {
         description,
@@ -501,8 +550,6 @@ async function parsePDFWithPDFJS(
     });
     const pdf = await loadingTask.promise;
 
-    console.log("PDF loaded successfully, pages:", pdf.numPages);
-
     let fullText = "";
 
     // Extract text from all pages
@@ -521,10 +568,7 @@ async function parsePDFWithPDFJS(
         .join(" ");
 
       fullText += pageText + " ";
-      console.log(`Page ${pageNum} text:`, pageText);
     }
-
-    console.log("Full extracted text:", fullText);
 
     // Use the parser factory to find the appropriate parser
     const parser = ReceiptParserFactory.findParser(fullText, file.name);
