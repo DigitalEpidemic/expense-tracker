@@ -966,6 +966,42 @@ describe("receiptParser", () => {
     });
 
     describe("parse", () => {
+      it("should parse official DoorDash receipt", async () => {
+        const mockFile = `Order Complete  Friday, April 25, 2025 at 2:18 AM  Your order is complete. Enjoy!  Your Dasher  Amandeep  Church's Chicken  1 Item  Subtotal   CA$17.39  Delivery Fee   CA$1.99   CA$0.00  Service Fee   CA$1.99   CA$1.04  Estimated Tax   CA$1.49  Discount   -CA$6.96  Dasher Tip   CA$2.50  Total   CA$15.46  Address  123 Fake Street,   Toronto,   ON   A1B 2X1  Leave it at my door  Delivery Instructions  Please do NOT ring the doorbell. UNIT 21. It is a TOWNHOUSE not a house. do not drop off at the incorrect location. Message me if you cannot find the house.  Create a business profile  Keep track of your business receipts  1×   5 Piece Tenders Combo  CA$17.39  Sweet and Sour, Sweet and Sour, Nestea, Original, Mashed Potatoes  Payment  Visa....3241 · 4/25/2025 · 1:59 AM   CA$15.46`;
+
+        const parser = new DoorDashReceiptParser();
+        const result = parser.parse(
+          mockFile,
+          "DoorDash Food Delivery - Order History.pdf"
+        );
+
+        console.log(result);
+
+        expect(result).not.toBeNull();
+        expect(result?.description).toBe("Church's Chicken");
+        expect(result?.amount).toBe("15.46");
+        expect(result?.date).toBe("2025-04-25");
+        expect(result?.category).toBe("Food & Dining");
+        expect(result?.confidence).toBeGreaterThanOrEqual(0.3);
+      });
+
+      it("should parse Desktop export of UberEats receipt email from Outlook", async () => {
+        const mockFile = `Track Your Order  O utloo k  O r de r   C on fi rm a t i on   f or   J eff r e y   f rom   W e n d y ' s  F rom   D oor D a s h   O r de r   < no - r e ply @ d oor da s h . c om >  D a t e   F r i   2025-03-07   12 : 46   AM  T o   fake @ h otm ai l . c om   < fake @ h otm ai l . c om >  Thanks for your  order, Jeffrey  The estimated delivery time for your order  is   1:03 AM - 1:13 AM . Track your order in  the DoorDash app or website.  Paid with Visa Ending in 9573  Wendy's  Total: CA$22.11  Your receipt  123 Fake St, Toronto, ON A1B 2X1, Canada  - For: Jeffrey Polasz -  1x   Baconator® with Cheese Combo   (Combos)  • Small Combo  • Baconator® with Cheese (Cals: 970)  • Premium Bun  • Ketchup  • Processed Cheese Slice  • Mayonnaise  • Caesar Side Salad (Cals: 340)  • Napkin  • Fork  • Mighty Caesar dressing  • Applewood Smoked Bacon  • Crouton Crumble  • Dasani® Water (500 ml) (Cals: 0)  CA$16.37  Subtotal   CA$16.37  Taxes   CA$2.26  Delivery Fee   CA$0.00  Service Fee   CA$0.98  Tip   CA$2.50  Discounts   -CA$19.98  Total Charged   CA$22.11`;
+
+        const parser = new DoorDashReceiptParser();
+        const result = parser.parse(
+          mockFile,
+          "Mail - Jeff Polasz - Outlook.pdf"
+        );
+
+        expect(result).not.toBeNull();
+        expect(result?.description).toBe("Wendy's");
+        expect(result?.amount).toBe("22.11");
+        expect(result?.date).toBe("2025-03-07");
+        expect(result?.category).toBe("Food & Dining");
+        expect(result?.confidence).toBeGreaterThanOrEqual(0.3);
+      });
+
       it("should return null when amount not found", () => {
         const text =
           "Order Confirmation for John from Restaurant\nDate: Jan 15, 2024\nNo total amount here";
@@ -1085,6 +1121,22 @@ describe("receiptParser", () => {
     });
 
     describe("parse", () => {
+      it("should parse official UberEats receipt", async () => {
+        const mockFile = `Simplii Visa ••••1234  9/5/25 1:34 PM  September 5, 2025  Thanks for ordering, Jeffrey  Here's your receipt from Firehouse Subs (The Boardwalk) and Uber Eats.  Total   CA$27.21  1   Club on a Sub™   CA$24.28  Choices for Club on a Sub™  Medium (7-8 inch) CA$6.99  BREAD TYPE  Wheat Bread CA$0.00  PICKLE  Side Pickle CA$0.00  Make it a Combo  Brownie Combo CA$6.99  CUSTOMIZE  Turkey CA$0.00  Ham CA$0.00  Bacon CA$0.00  Monterey Jack CA$0.00  Lettuce CA$0.00  Tomato CA$0.00  Onion CA$0.00  No Deli Mustard CA$0.00  Mayo CA$0.00  Subtotal   CA$24.28  Delivery Fee   CA$2.99  Service Fee   CA$2.91  Tax   CA$2.84  Tip   CA$2.50  Delivery Discount   -CA$2.99  Membership Benefit   -CA$1.00  Special Offers   -CA$4.32  Payments  CA$27.21  You ordered from Firehouse Subs (The Boardwalk)  Picked up from  210 The Boardwalk, Kitchener, ON N2N 0B1, CA  Delivered to  123 Fake St, Toronto, ON A1B 2X1,  Canada`;
+
+        const parser = new UberEatsReceiptParser();
+        const result = parser.parse(mockFile, "Receipt_05Sep2025_173438.pdf");
+
+        console.log(result);
+
+        expect(result).not.toBeNull();
+        expect(result?.description).toBe("Firehouse Subs (The Boardwalk)");
+        expect(result?.amount).toBe("27.21");
+        expect(result?.date).toBe("2025-09-05");
+        expect(result?.category).toBe("Food & Dining");
+        expect(result?.confidence).toBeGreaterThanOrEqual(0.3);
+      });
+
       it("should return null when amount not found", () => {
         const text =
           "You ordered from Restaurant\nJanuary 15, 2024\nNo total amount here";

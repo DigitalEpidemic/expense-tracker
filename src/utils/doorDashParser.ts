@@ -22,6 +22,8 @@ export class DoorDashReceiptParser extends BaseReceiptParser {
   parse(text: string, fileName: string): ParsedReceiptData | null {
     try {
       const totalPatterns = [
+        /Dasher Tip\s+CA\$[\d.]+\s+Total\s+CA\$(\d+\.\d{2})/i,
+        /Total\s+CA\$(\d+\.\d{2})(?:\s+Address|\s*$)/i,
         /Total:\s*(?:CA\$|\$)(\d+\.\d{2})/i,
         /Total Charged\s+(?:CA\$|\$)(\d+\.\d{2})/i,
         /Total\s+(?:CA\$|\$)(\d+\.\d{2})/i,
@@ -36,6 +38,7 @@ export class DoorDashReceiptParser extends BaseReceiptParser {
       const amount = this.extractAmountFromText(text, totalPatterns);
 
       const restaurantPatterns = [
+        /Your Dasher\s+\w+\s+([^0-9]+?)\s+\d+\s+Item/i,
         /Order Confirmation for \w+ from (.+?)$/im,
         /Subject:\s*Order Confirmation for \w+ from (.+?)$/im,
         /Paid with .+?\d{4}\s+(.+?)\s+Total:/i,
