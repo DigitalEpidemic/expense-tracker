@@ -4,14 +4,20 @@ A modern expense tracking application built with React, TypeScript, Tailwind CSS
 
 ## Features
 
-- 🔐 Google Authentication
-- 💰 Add, edit, and delete expenses
-- 📊 Real-time data synchronization with Firestore
-- 📱 Mobile-responsive design
-- 🗂️ Categorize expenses
-- ✅ Track reimbursement status
-- 📈 Monthly expense grouping with totals
-- 🔍 Filter expenses by reimbursement status
+- 🔐 **Google Authentication** - Secure login with Firebase Auth
+- 💰 **Full Expense Management** - Add, edit, delete, and duplicate expenses
+- 📊 **Real-time Data Sync** - Live updates with Firestore database
+- 📱 **Mobile-Responsive Design** - Optimized for both desktop and mobile devices
+- 🗂️ **Expense Categories** - Organize expenses into predefined categories (Food & Dining, Transportation, Shopping, etc.)
+- ✅ **Reimbursement Tracking** - Mark expenses as reimbursed or pending with one-click toggle
+- 📈 **Monthly Grouping** - Automatic grouping by month with total, reimbursed, and pending amounts
+- 🔍 **Smart Filtering** - Filter expenses by reimbursement status (All, Reimbursed, Pending)
+- 📄 **Receipt Upload & Parsing** - Upload receipt images (JPG, PNG, WebP) or PDFs and automatically extract expense data
+- 🔄 **Bulk Upload** - Upload multiple receipts at once for batch processing
+- 📋 **Expense Duplication** - Quickly duplicate existing expenses with one click
+- 🏷️ **Summary Dashboard** - View total, reimbursed, and pending amounts at a glance
+- 🔒 **Secure Data Storage** - User-specific data isolation with Firestore security rules
+- 🎨 **Modern UI/UX** - Clean, intuitive interface with smooth animations and transitions
 
 ## Setup
 
@@ -67,31 +73,62 @@ npm run dev
 
 ## Usage
 
-1. Sign in with your Google account
-2. Add expenses using the "Add Expense" button
-3. Edit or delete expenses using the action buttons
-4. Filter expenses by reimbursement status
-5. View monthly totals and overall summaries
+1. **Sign In** - Use your Google account for secure authentication
+2. **Add Expenses** - Click "Add Expense" to manually enter expense details or upload receipt files
+3. **Receipt Upload** - Drag and drop or select receipt images/PDFs for automatic data extraction
+4. **Bulk Upload** - Upload multiple receipts at once for efficient data entry
+5. **Manage Expenses** - Use action buttons to edit, duplicate, or delete expenses
+6. **Track Reimbursements** - Toggle reimbursement status with one click
+7. **Filter & View** - Use filters to view all, reimbursed, or pending expenses
+8. **Monitor Totals** - Check summary cards and monthly breakdowns for financial insights
+
+## Receipt Processing
+
+The application includes intelligent receipt parsing capabilities:
+
+- **Supported Formats**: JPG, PNG, WebP images and PDF files (max 10MB each)
+- **Drag & Drop**: Intuitive drag-and-drop interface for file uploads
+- **Automatic Extraction**: Automatically extracts merchant name, amount, date, and category from UberEats receipts
+- **Bulk Processing**: Upload multiple receipts simultaneously for batch processing
+- **Smart Parsing**: Uses PDF.js for client-side PDF text extraction and pattern matching
+- **Fallback Handling**: Manual form completion when automatic parsing fails
+- **Duplicate Detection**: Prevents duplicate file uploads
 
 ## Technologies Used
 
-- **React 18** - UI framework
-- **TypeScript** - Type safety
-- **Tailwind CSS** - Styling
-- **Firebase** - Backend services
-  - Firestore - Database
-  - Authentication - User management
-- **Vite** - Build tool
-- **Lucide React** - Icons
+- **React 18** - UI framework with hooks and modern patterns
+- **TypeScript** - Type safety and enhanced developer experience
+- **Tailwind CSS** - Utility-first CSS framework for responsive design
+- **Firebase** - Backend-as-a-Service platform
+  - Firestore - NoSQL database with real-time synchronization
+  - Authentication - Google OAuth integration
+- **Vite** - Fast build tool and development server
+- **PDF.js** - Client-side PDF parsing for receipt processing
+- **React Hot Toast** - User-friendly notifications
+- **Lucide React** - Modern icon library
+- **UUID** - Unique identifier generation
 
 ## Project Structure
 
 ```
 src/
 ├── components/          # React components
-├── hooks/              # Custom React hooks
-├── types/              # TypeScript type definitions
-├── utils/              # Utility functions
-├── config/             # Configuration files
-└── App.tsx             # Main application component
+│   ├── AuthScreen.tsx   # Google authentication screen
+│   ├── ExpenseForm.tsx  # Add/edit expense form with receipt upload
+│   ├── ExpenseList.tsx  # Expense list with actions (edit, delete, duplicate)
+│   ├── FilterBar.tsx    # Reimbursement status filter controls
+│   ├── Header.tsx       # Application header with user info
+│   └── SummaryCards.tsx # Financial summary dashboard
+├── hooks/               # Custom React hooks
+│   ├── useAuth.ts       # Firebase authentication hook
+│   └── useExpenses.ts   # Expense data management hook
+├── types/               # TypeScript type definitions
+│   └── expense.ts       # Expense and form data interfaces
+├── utils/               # Utility functions
+│   ├── expenseUtils.ts  # Currency formatting and grouping utilities
+│   └── receiptParser.ts # PDF/image receipt parsing with PDF.js
+├── config/              # Configuration files
+│   └── firebase.ts      # Firebase initialization
+├── App.tsx              # Main application component
+└── main.tsx             # Application entry point
 ```
