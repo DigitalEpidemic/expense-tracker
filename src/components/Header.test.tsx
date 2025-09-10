@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { User } from "firebase/auth";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as useAuthModule from "../hooks/useAuth";
 import Header from "./Header";
@@ -32,7 +33,7 @@ describe("Header", () => {
     const mockUser = {
       displayName: "John Doe",
       photoURL: "https://example.com/photo.jpg",
-    };
+    } as User;
     const mockLogout = vi.fn();
 
     vi.mocked(useAuthModule.useAuth).mockReturnValue({
@@ -56,7 +57,7 @@ describe("Header", () => {
     const mockUser = {
       displayName: null,
       photoURL: "https://example.com/photo.jpg",
-    };
+    } as User;
     const mockLogout = vi.fn();
 
     vi.mocked(useAuthModule.useAuth).mockReturnValue({
@@ -75,7 +76,7 @@ describe("Header", () => {
     const mockUser = {
       displayName: "John Doe",
       photoURL: null,
-    };
+    } as User;
     const mockLogout = vi.fn();
 
     vi.mocked(useAuthModule.useAuth).mockReturnValue({
@@ -94,7 +95,7 @@ describe("Header", () => {
   it("should call logout when logout button is clicked", () => {
     const mockLogout = vi.fn();
     vi.mocked(useAuthModule.useAuth).mockReturnValue({
-      user: { displayName: "John Doe" },
+      user: { displayName: "John Doe" } as User,
       logout: mockLogout,
       loading: false,
       signInWithGoogle: vi.fn(),
@@ -112,7 +113,7 @@ describe("Header", () => {
     const mockUser = {
       displayName: null,
       photoURL: null,
-    };
+    } as User;
     const mockLogout = vi.fn();
 
     vi.mocked(useAuthModule.useAuth).mockReturnValue({

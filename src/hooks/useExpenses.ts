@@ -63,7 +63,7 @@ export const useExpenses = (userId: string | null) => {
         updatedAt: Timestamp.fromDate(now),
       });
       toast.success("Expense added successfully!");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error adding expense:", error);
       toast.error("Failed to add expense");
     }
@@ -84,9 +84,10 @@ export const useExpenses = (userId: string | null) => {
         updateData.amount = parseFloat(expenseData.amount);
       }
 
+      // @ts-expect-error - Firestore typing issue with mixed string/number fields
       await updateDoc(docRef, updateData);
       toast.success("Expense updated successfully!");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error updating expense:", error);
       toast.error("Failed to update expense");
     }
@@ -96,7 +97,7 @@ export const useExpenses = (userId: string | null) => {
     try {
       await deleteDoc(doc(db, "expenses", id));
       toast.success("Expense deleted successfully!");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error deleting expense:", error);
       toast.error("Failed to delete expense");
     }

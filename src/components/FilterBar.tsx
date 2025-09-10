@@ -1,16 +1,16 @@
-import React from 'react';
-import { Filter } from 'lucide-react';
+import { Filter } from "lucide-react";
+import React from "react";
 
 interface FilterBarProps {
-  filter: 'all' | 'reimbursed' | 'pending';
-  onFilterChange: (filter: 'all' | 'reimbursed' | 'pending') => void;
+  filter: "all" | "reimbursed" | "pending";
+  onFilterChange: (filter: "all" | "reimbursed" | "pending") => void;
 }
 
 const FilterBar: React.FC<FilterBarProps> = ({ filter, onFilterChange }) => {
   const filters = [
-    { key: 'all', label: 'All Expenses' },
-    { key: 'pending', label: 'Pending' },
-    { key: 'reimbursed', label: 'Reimbursed' },
+    { key: "all", label: "All Expenses" },
+    { key: "pending", label: "Pending" },
+    { key: "reimbursed", label: "Reimbursed" },
   ] as const;
 
   return (
@@ -23,8 +23,8 @@ const FilterBar: React.FC<FilterBarProps> = ({ filter, onFilterChange }) => {
             onClick={() => onFilterChange(key)}
             className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors duration-200 ${
               filter === key
-                ? 'bg-blue-100 text-blue-700'
-                : 'text-gray-600 hover:bg-gray-100'
+                ? "bg-blue-100 text-blue-700"
+                : "text-gray-600 hover:bg-gray-100"
             }`}
           >
             {label}

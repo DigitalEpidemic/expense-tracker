@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { Mock, vi } from "vitest";
+import { beforeEach, describe, expect, it, Mock, vi } from "vitest";
 import App from "./App";
 import { useAuth } from "./hooks/useAuth";
 import { useExpenses } from "./hooks/useExpenses";
@@ -28,7 +28,8 @@ const mockExpenses = [
     category: "Food & Dining",
     reimbursed: false,
     userId: "user1",
-    createdAt: "2024-01-15T10:00:00Z",
+    createdAt: new Date("2024-01-15T10:00:00Z"),
+    updatedAt: new Date("2024-01-15T10:00:00Z"),
   },
   {
     id: "2",
@@ -38,7 +39,8 @@ const mockExpenses = [
     category: "Transportation",
     reimbursed: true,
     userId: "user1",
-    createdAt: "2024-01-10T08:00:00Z",
+    createdAt: new Date("2024-01-10T08:00:00Z"),
+    updatedAt: new Date("2024-01-10T08:00:00Z"),
   },
 ];
 

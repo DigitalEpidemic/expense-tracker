@@ -1,7 +1,12 @@
-import { useEffect, useState } from 'react';
-import { User, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
-import { auth, googleProvider } from '../config/firebase';
-import toast from 'react-hot-toast';
+import {
+  User,
+  onAuthStateChanged,
+  signInWithPopup,
+  signOut,
+} from "firebase/auth";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { auth, googleProvider } from "../config/firebase";
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -19,13 +24,16 @@ export const useAuth = () => {
   const signInWithGoogle = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
-      toast.success('Successfully signed in!');
-    } catch (error) {
-      console.error('Sign in error:', error);
-      if (error.code === 'auth/popup-blocked') {
-        toast.error('Pop-up blocked! Please allow pop-ups for this site and try again.');
+      toast.success("Successfully signed in!");
+    } catch (error: unknown) {
+      console.error("Sign in error:", error);
+      const firebaseError = error as { code?: string };
+      if (firebaseError.code === "auth/popup-blocked") {
+        toast.error(
+          "Pop-up blocked! Please allow pop-ups for this site and try again."
+        );
       } else {
-        toast.error('Failed to sign in');
+        toast.error("Failed to sign in");
       }
     }
   };
@@ -33,10 +41,10 @@ export const useAuth = () => {
   const logout = async () => {
     try {
       await signOut(auth);
-      toast.success('Successfully signed out!');
+      toast.success("Successfully signed out!");
     } catch (error) {
-      console.error('Sign out error:', error);
-      toast.error('Failed to sign out');
+      console.error("Sign out error:", error);
+      toast.error("Failed to sign out");
     }
   };
 

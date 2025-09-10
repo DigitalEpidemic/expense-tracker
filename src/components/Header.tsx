@@ -1,6 +1,6 @@
-import React from 'react';
-import { LogOut, Receipt } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
+import { LogOut, Receipt } from "lucide-react";
+import React from "react";
+import { useAuth } from "../hooks/useAuth";
 
 const Header: React.FC = () => {
   const { user, logout } = useAuth();
@@ -21,7 +21,7 @@ const Header: React.FC = () => {
               {user?.photoURL && (
                 <img
                   src={user.photoURL}
-                  alt={user.displayName || 'User'}
+                  alt={user.displayName || "User"}
                   className="w-8 h-8 rounded-full"
                 />
               )}

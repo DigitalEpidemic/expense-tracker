@@ -1,6 +1,6 @@
-import React from 'react';
-import { DollarSign, CheckCircle, Clock } from 'lucide-react';
-import { formatCurrency } from '../utils/expenseUtils';
+import { CheckCircle, Clock, DollarSign } from "lucide-react";
+import React from "react";
+import { formatCurrency } from "../utils/expenseUtils";
 
 interface SummaryCardsProps {
   total: number;
@@ -8,42 +8,46 @@ interface SummaryCardsProps {
   pending: number;
 }
 
-const SummaryCards: React.FC<SummaryCardsProps> = ({ total, reimbursed, pending }) => {
+const SummaryCards: React.FC<SummaryCardsProps> = ({
+  total,
+  reimbursed,
+  pending,
+}) => {
   const cards = [
     {
-      title: 'Total Spent',
+      title: "Total Spent",
       amount: total,
       icon: DollarSign,
-      color: 'blue',
+      color: "blue",
     },
     {
-      title: 'Reimbursed',
+      title: "Reimbursed",
       amount: reimbursed,
       icon: CheckCircle,
-      color: 'green',
+      color: "green",
     },
     {
-      title: 'Pending',
+      title: "Pending",
       amount: pending,
       icon: Clock,
-      color: 'amber',
+      color: "amber",
     },
   ];
 
   const getCardStyles = (color: string) => {
     const styles = {
-      blue: 'bg-blue-50 border-blue-200',
-      green: 'bg-green-50 border-green-200',
-      amber: 'bg-amber-50 border-amber-200',
+      blue: "bg-blue-50 border-blue-200",
+      green: "bg-green-50 border-green-200",
+      amber: "bg-amber-50 border-amber-200",
     };
     return styles[color as keyof typeof styles];
   };
 
   const getIconStyles = (color: string) => {
     const styles = {
-      blue: 'text-blue-600',
-      green: 'text-green-600',
-      amber: 'text-amber-600',
+      blue: "text-blue-600",
+      green: "text-green-600",
+      amber: "text-amber-600",
     };
     return styles[color as keyof typeof styles];
   };

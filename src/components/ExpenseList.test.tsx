@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Mock, vi } from "vitest";
+import { beforeEach, describe, expect, it, Mock, vi } from "vitest";
 import { useIsDesktop } from "../hooks/useMediaQuery";
 import { Expense } from "../types/expense";
 import ExpenseList from "./ExpenseList";
@@ -19,7 +19,8 @@ const mockExpenses: Expense[] = [
     category: "Food & Dining",
     reimbursed: false,
     userId: "user1",
-    createdAt: "2024-01-15T10:00:00Z",
+    createdAt: new Date("2024-01-15T10:00:00Z"),
+    updatedAt: new Date("2024-01-15T10:00:00Z"),
   },
   {
     id: "2",
@@ -29,7 +30,8 @@ const mockExpenses: Expense[] = [
     category: "Transportation",
     reimbursed: true,
     userId: "user1",
-    createdAt: "2024-01-10T08:00:00Z",
+    createdAt: new Date("2024-01-10T08:00:00Z"),
+    updatedAt: new Date("2024-01-10T08:00:00Z"),
   },
   {
     id: "3",
@@ -39,7 +41,8 @@ const mockExpenses: Expense[] = [
     category: "Food & Dining",
     reimbursed: false,
     userId: "user1",
-    createdAt: "2024-01-12T12:00:00Z",
+    createdAt: new Date("2024-01-12T12:00:00Z"),
+    updatedAt: new Date("2024-01-12T12:00:00Z"),
   },
 ];
 

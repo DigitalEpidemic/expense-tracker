@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import * as firestore from "firebase/firestore";
 import toast from "react-hot-toast";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, Mock, vi } from "vitest";
 import { useExpenses } from "./useExpenses";
 
 // Mock Firestore
@@ -62,12 +62,12 @@ describe("useExpenses", () => {
     vi.mocked(firestore.collection).mockReturnValue(
       "collection" as unknown as firestore.CollectionReference
     );
-    vi.mocked(firestore.where).mockReturnValue(
-      "where" as unknown as firestore.QueryConstraint
-    );
-    vi.mocked(firestore.orderBy).mockReturnValue(
-      "orderBy" as unknown as firestore.QueryConstraint
-    );
+    vi.mocked(firestore.where).mockReturnValue({
+      type: "where",
+    } as unknown as firestore.QueryFieldFilterConstraint);
+    vi.mocked(firestore.orderBy).mockReturnValue({
+      type: "orderBy",
+    } as unknown as firestore.QueryOrderByConstraint);
     vi.mocked(firestore.query).mockReturnValue(
       "query" as unknown as firestore.Query
     );
@@ -113,7 +113,7 @@ describe("useExpenses", () => {
       ),
     };
 
-    vi.mocked(firestore.onSnapshot).mockImplementation(
+    (vi.mocked(firestore.onSnapshot) as unknown as Mock).mockImplementation(
       (_query: unknown, callback: (snapshot: unknown) => void) => {
         setTimeout(() => callback(mockSnapshot), 0);
         return vi.fn(); // unsubscribe function
@@ -350,7 +350,7 @@ describe("useExpenses", () => {
       }),
     };
 
-    vi.mocked(firestore.onSnapshot).mockImplementation(
+    (vi.mocked(firestore.onSnapshot) as unknown as Mock).mockImplementation(
       (_query: unknown, callback: (snapshot: unknown) => void) => {
         callback(mockSnapshot);
         return mockUnsubscribe;
