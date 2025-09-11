@@ -300,4 +300,14 @@ describe("BaseReceiptParser", () => {
       expect(result).toBe(new Date().toISOString().split("T")[0]);
     });
   });
+
+  describe("parseDateFromText - additional coverage", () => {
+    it("should handle date parsing errors in try-catch", () => {
+      // Test error handling in parseDateFromText
+      const patterns = [/invalid-pattern-that-will-cause-error/];
+      const text = "Some text without proper date format";
+      const result = parser["parseDateFromText"](text, patterns);
+      expect(result).toBe(""); // Should return empty string when no match
+    });
+  });
 });

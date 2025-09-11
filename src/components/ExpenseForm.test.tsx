@@ -525,4 +525,72 @@ describe("ExpenseForm", () => {
       }),
     ]);
   });
+
+  it("uses handleChange for form fields when single file is uploaded", async () => {
+    const onSubmit = vi.fn();
+    const file = new File(["test"], "receipt.pdf", {
+      type: "application/pdf",
+    });
+
+    // Mock single file parsing
+    mockParseReceiptFile.mockResolvedValueOnce({
+      description: "Coffee Shop",
+      amount: "5.99",
+      date: "2024-01-15",
+      category: "Food & Dining",
+      confidence: 0.9,
+    });
+
+    render(<ExpenseForm {...defaultProps} onSubmit={onSubmit} />);
+
+    // Upload single file
+    const fileInput = document.getElementById(
+      "receipt-upload"
+    ) as HTMLInputElement;
+    fireEvent.change(fileInput, {
+      target: { files: [file] },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("Coffee Shop")).toBeInTheDocument();
+    });
+
+    // Test single file form field changes (should call handleChange, not handleMultiFormChange)
+    // This covers lines 378, 397, 419, 459 in ExpenseForm.tsx
+
+    // Test description field change (line 378-379)
+    const descriptionInput = screen.getByDisplayValue("Coffee Shop");
+    fireEvent.change(descriptionInput, {
+      target: { value: "Updated Coffee Shop" },
+    });
+
+    // Test amount field change (line 396-398)
+    const amountInput = screen.getByDisplayValue("5.99");
+    fireEvent.change(amountInput, { target: { value: "7.50" } });
+
+    // Test date field change (line 417-419)
+    const dateInput = screen.getByDisplayValue("2024-01-15");
+    fireEvent.change(dateInput, { target: { value: "2024-01-20" } });
+
+    // Test category field change (line 434-436)
+    const categorySelect = screen.getByDisplayValue("Food & Dining");
+    fireEvent.change(categorySelect, { target: { value: "Transportation" } });
+
+    // Test reimbursed checkbox change (line 457-459)
+    const reimbursedCheckbox = screen.getByRole("checkbox");
+    fireEvent.click(reimbursedCheckbox);
+
+    // Submit the form
+    const saveButton = screen.getByText("Save");
+    await userEvent.click(saveButton);
+
+    // Verify that handleChange was used (single form data object submitted)
+    expect(onSubmit).toHaveBeenCalledWith({
+      description: "Updated Coffee Shop",
+      amount: "7.50",
+      date: "2024-01-20",
+      category: "Transportation",
+      reimbursed: true,
+    });
+  });
 });
