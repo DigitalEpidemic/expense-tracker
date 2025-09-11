@@ -77,7 +77,9 @@ describe("ReimbursementModal", () => {
     const onClose = vi.fn();
     render(<ReimbursementModal {...defaultProps} onClose={onClose} />);
 
-    const closeButton = screen.getByRole("button", { name: "" }); // X button
+    const closeButton = screen.getByRole("button", {
+      name: "Close reimbursement modal",
+    });
     await user.click(closeButton);
 
     expect(onClose).toHaveBeenCalledOnce();

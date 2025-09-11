@@ -119,6 +119,7 @@ const ReimbursementModal: React.FC<ReimbursementModalProps> = ({
           <button
             onClick={onClose}
             className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+            aria-label="Close reimbursement modal"
           >
             <X className="w-5 h-5" />
           </button>

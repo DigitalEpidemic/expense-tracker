@@ -148,6 +148,7 @@ function App() {
             <button
               onClick={() => setIsReimbursementModalOpen(true)}
               className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center justify-center gap-2 font-medium"
+              aria-label="Open reimbursement matching modal"
             >
               <Calculator className="w-5 h-5" />
               <span className="hidden sm:inline">Match Reimbursements</span>

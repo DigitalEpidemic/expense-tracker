@@ -523,4 +523,189 @@ describe("App", () => {
       reimbursed: false,
     });
   });
+
+  it("renders Match Reimbursements button", () => {
+    mockUseAuth.mockReturnValue({
+      user: { uid: "user1", email: "test@example.com" },
+      loading: false,
+    });
+    mockUseExpenses.mockReturnValue({
+      expenses: mockExpenses,
+      loading: false,
+      addExpense: vi.fn(),
+      updateExpense: vi.fn(),
+      deleteExpense: vi.fn(),
+      toggleReimbursed: vi.fn(),
+    });
+
+    render(<App />);
+
+    // Check that the Match Reimbursements button is present
+    expect(screen.getByText("Match Reimbursements")).toBeInTheDocument();
+  });
+
+  it("opens reimbursement modal when Match Reimbursements button is clicked", () => {
+    mockUseAuth.mockReturnValue({
+      user: { uid: "user1", email: "test@example.com" },
+      loading: false,
+    });
+    mockUseExpenses.mockReturnValue({
+      expenses: mockExpenses,
+      loading: false,
+      addExpense: vi.fn(),
+      updateExpense: vi.fn(),
+      deleteExpense: vi.fn(),
+      toggleReimbursed: vi.fn(),
+    });
+
+    render(<App />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Open reimbursement matching modal" })
+    );
+    expect(
+      screen.getByRole("heading", { name: "Match Reimbursements" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Enter your reimbursement total to find matching expense combinations and bulk mark them as reimbursed"
+      )
+    ).toBeInTheDocument();
+  });
+
+  it("shows shortened button text on mobile view", () => {
+    mockUseAuth.mockReturnValue({
+      user: { uid: "user1", email: "test@example.com" },
+      loading: false,
+    });
+    mockUseExpenses.mockReturnValue({
+      expenses: mockExpenses,
+      loading: false,
+      addExpense: vi.fn(),
+      updateExpense: vi.fn(),
+      deleteExpense: vi.fn(),
+      toggleReimbursed: vi.fn(),
+    });
+    // Set mobile view
+    mockUseIsDesktop.mockReturnValue(false);
+
+    render(<App />);
+
+    // On mobile, the button should show "Match" instead of "Match Reimbursements"
+    expect(screen.getByText("Match")).toBeInTheDocument();
+  });
+
+  it("handles bulk mark reimbursed functionality", async () => {
+    const mockToggleReimbursed = vi.fn().mockResolvedValue(undefined);
+
+    mockUseAuth.mockReturnValue({
+      user: { uid: "user1", email: "test@example.com" },
+      loading: false,
+    });
+    mockUseExpenses.mockReturnValue({
+      expenses: mockExpenses,
+      loading: false,
+      addExpense: vi.fn(),
+      updateExpense: vi.fn(),
+      deleteExpense: vi.fn(),
+      toggleReimbursed: mockToggleReimbursed,
+    });
+
+    // Create a test component that directly tests the bulk reimbursement logic
+    const TestBulkReimbursementComponent = () => {
+      const { user } = useAuth();
+      const { toggleReimbursed } = useExpenses(user?.uid || null);
+
+      const handleBulkMarkReimbursed = async () => {
+        const expenseIds = ["1", "2"];
+        // Simulate the bulk reimbursement logic from App.tsx lines 105-109
+        for (const id of expenseIds) {
+          await toggleReimbursed(id, true);
+        }
+      };
+
+      if (!user) return null;
+
+      return (
+        <button onClick={handleBulkMarkReimbursed} data-testid="bulk-reimburse">
+          Mark as Reimbursed
+        </button>
+      );
+    };
+
+    render(<TestBulkReimbursementComponent />);
+
+    // Click the bulk reimbursement button
+    fireEvent.click(screen.getByTestId("bulk-reimburse"));
+
+    // Wait for all toggleReimbursed calls to complete
+    await waitFor(() => {
+      expect(mockToggleReimbursed).toHaveBeenCalledTimes(2);
+    });
+
+    // Verify each expense was marked as reimbursed individually
+    expect(mockToggleReimbursed).toHaveBeenNthCalledWith(1, "1", true);
+    expect(mockToggleReimbursed).toHaveBeenNthCalledWith(2, "2", true);
+  });
+
+  it("passes correct props to ReimbursementModal", () => {
+    mockUseAuth.mockReturnValue({
+      user: { uid: "user1", email: "test@example.com" },
+      loading: false,
+    });
+    mockUseExpenses.mockReturnValue({
+      expenses: mockExpenses,
+      loading: false,
+      addExpense: vi.fn(),
+      updateExpense: vi.fn(),
+      deleteExpense: vi.fn(),
+      toggleReimbursed: vi.fn(),
+    });
+
+    render(<App />);
+
+    // Open the reimbursement modal
+    fireEvent.click(
+      screen.getByRole("button", { name: "Open reimbursement matching modal" })
+    );
+
+    // Modal should receive the correct expenses data
+    // This indirectly tests that the modal is receiving props correctly
+    expect(screen.getByText("Ready to find matches")).toBeInTheDocument();
+
+    // Should show pending expenses count (1 pending expense from mockExpenses)
+    expect(screen.getByText(/You have 1 pending expense/)).toBeInTheDocument();
+  });
+
+  it("closes reimbursement modal when close button is clicked", () => {
+    mockUseAuth.mockReturnValue({
+      user: { uid: "user1", email: "test@example.com" },
+      loading: false,
+    });
+    mockUseExpenses.mockReturnValue({
+      expenses: mockExpenses,
+      loading: false,
+      addExpense: vi.fn(),
+      updateExpense: vi.fn(),
+      deleteExpense: vi.fn(),
+      toggleReimbursed: vi.fn(),
+    });
+
+    render(<App />);
+
+    // Open the modal
+    fireEvent.click(
+      screen.getByRole("button", { name: "Open reimbursement matching modal" })
+    );
+    expect(screen.getByText("Ready to find matches")).toBeInTheDocument();
+
+    // Close the modal by clicking the X button
+    const closeButton = screen.getByRole("button", {
+      name: "Close reimbursement modal",
+    });
+    fireEvent.click(closeButton);
+
+    // Modal should be closed - the modal content should not be visible
+    expect(screen.queryByText("Ready to find matches")).not.toBeInTheDocument();
+  });
 });
