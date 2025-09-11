@@ -50,7 +50,7 @@ export const useExpenses = (userId: string | null) => {
     return unsubscribe;
   }, [userId]);
 
-  const addExpense = async (expenseData: ExpenseFormData) => {
+  const addExpense = async (expenseData: ExpenseFormData, silent = false) => {
     if (!userId) return;
 
     try {
@@ -62,7 +62,9 @@ export const useExpenses = (userId: string | null) => {
         createdAt: Timestamp.fromDate(now),
         updatedAt: Timestamp.fromDate(now),
       });
-      toast.success("Expense added successfully!");
+      if (!silent) {
+        toast.success("Expense added successfully!");
+      }
     } catch (error: unknown) {
       console.error("Error adding expense:", error);
       toast.error("Failed to add expense");
@@ -71,7 +73,8 @@ export const useExpenses = (userId: string | null) => {
 
   const updateExpense = async (
     id: string,
-    expenseData: Partial<ExpenseFormData>
+    expenseData: Partial<ExpenseFormData>,
+    silent = false
   ) => {
     try {
       const docRef = doc(db, "expenses", id);
@@ -86,7 +89,9 @@ export const useExpenses = (userId: string | null) => {
 
       // @ts-expect-error - Firestore typing issue with mixed string/number fields
       await updateDoc(docRef, updateData);
-      toast.success("Expense updated successfully!");
+      if (!silent) {
+        toast.success("Expense updated successfully!");
+      }
     } catch (error: unknown) {
       console.error("Error updating expense:", error);
       toast.error("Failed to update expense");
@@ -103,8 +108,12 @@ export const useExpenses = (userId: string | null) => {
     }
   };
 
-  const toggleReimbursed = async (id: string, reimbursed: boolean) => {
-    await updateExpense(id, { reimbursed });
+  const toggleReimbursed = async (
+    id: string,
+    reimbursed: boolean,
+    silent = false
+  ) => {
+    await updateExpense(id, { reimbursed }, silent);
   };
 
   return {

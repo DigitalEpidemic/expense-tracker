@@ -1,6 +1,6 @@
 import { Calculator, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Toaster } from "react-hot-toast";
+import toast, { Toaster } from "react-hot-toast";
 import { useAuth } from "./hooks/useAuth";
 import { useExpenses } from "./hooks/useExpenses";
 import { useIsDesktop } from "./hooks/useMediaQuery";
@@ -59,8 +59,9 @@ function App() {
     if (Array.isArray(data)) {
       // Bulk upload
       for (const expense of data) {
-        await addExpense(expense);
+        await addExpense(expense, true);
       }
+      toast.success(`Added ${data.length} expenses successfully!`);
     } else {
       // Single expense
       await addExpense(data);
@@ -104,7 +105,7 @@ function App() {
 
   const handleBulkMarkReimbursed = async (expenseIds: string[]) => {
     for (const id of expenseIds) {
-      await toggleReimbursed(id, true);
+      await toggleReimbursed(id, true, true);
     }
   };
 
