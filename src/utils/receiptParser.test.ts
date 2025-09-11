@@ -73,7 +73,7 @@ describe("receiptParser", () => {
       const result = await parseReceiptFile(mockFile);
 
       expect(result).not.toBeNull();
-      expect(result?.description).toBe("McDonald's (123 Main St)");
+      expect(result?.description).toBe("McDonald's");
       expect(result?.amount).toBe("25.50");
       expect(result?.date).toBe("2024-01-15");
       expect(result?.category).toBe("Food & Dining");
@@ -274,79 +274,6 @@ describe("receiptParser", () => {
 
       expect(result).not.toBeNull();
       expect(result?.amount).toBe("12.75");
-    });
-
-    it("should handle restaurant with location in parentheses", async () => {
-      const mockFile = {
-        name: "Receipt_15Jan2024.pdf",
-        type: "application/pdf",
-        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
-      } as unknown as File;
-
-      const mockTextContent = {
-        items: [
-          {
-            str: "Here's your receipt from McDonald's (123 Main Street, Downtown) and Uber Eats",
-          },
-          { str: "Total $18.50" },
-          { str: "January 15, 2024" },
-        ],
-      };
-
-      const mockPage = {
-        getTextContent: vi.fn().mockResolvedValue(mockTextContent),
-      };
-
-      const mockPdf = {
-        numPages: 1,
-        getPage: vi.fn().mockResolvedValue(mockPage),
-      };
-
-      vi.mocked(pdfjsLib.getDocument).mockReturnValue({
-        promise: Promise.resolve(mockPdf),
-      } as unknown as PDFDocumentLoadingTask);
-
-      const result = await parseReceiptFile(mockFile);
-
-      expect(result).not.toBeNull();
-      expect(result?.description).toBe(
-        "McDonald's (123 Main Street, Downtown)"
-      );
-    });
-
-    it("should extract location from pickup address", async () => {
-      const mockFile = {
-        name: "Receipt_15Jan2024.pdf",
-        type: "application/pdf",
-        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
-      } as unknown as File;
-
-      const mockTextContent = {
-        items: [
-          { str: "You ordered from Pizza Place" },
-          { str: "Picked up from 456 Oak Avenue Delivered to" },
-          { str: "Total $22.00" },
-          { str: "January 15, 2024" },
-        ],
-      };
-
-      const mockPage = {
-        getTextContent: vi.fn().mockResolvedValue(mockTextContent),
-      };
-
-      const mockPdf = {
-        numPages: 1,
-        getPage: vi.fn().mockResolvedValue(mockPage),
-      };
-
-      vi.mocked(pdfjsLib.getDocument).mockReturnValue({
-        promise: Promise.resolve(mockPdf),
-      } as unknown as PDFDocumentLoadingTask);
-
-      const result = await parseReceiptFile(mockFile);
-
-      expect(result).not.toBeNull();
-      expect(result?.description).toBe("Pizza Place (456 Oak Avenue)");
     });
 
     it("should handle different date formats", async () => {
@@ -1130,7 +1057,7 @@ describe("receiptParser", () => {
         console.log(result);
 
         expect(result).not.toBeNull();
-        expect(result?.description).toBe("Firehouse Subs (The Boardwalk)");
+        expect(result?.description).toBe("Firehouse Subs");
         expect(result?.amount).toBe("27.21");
         expect(result?.date).toBe("2025-09-05");
         expect(result?.category).toBe("Food & Dining");

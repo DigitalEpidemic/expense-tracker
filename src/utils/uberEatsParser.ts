@@ -67,7 +67,7 @@ export class UberEatsReceiptParser extends BaseReceiptParser {
         text,
         restaurantLocationPatterns
       );
-      const description = this.buildDescription(restaurantInfo, text);
+      const description = this.buildDescription(restaurantInfo);
 
       const datePatterns = [
         /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(\d{4})/i,
@@ -95,7 +95,7 @@ export class UberEatsReceiptParser extends BaseReceiptParser {
     }
   }
 
-  private buildDescription(restaurantInfo: string, text: string): string {
+  private buildDescription(restaurantInfo: string): string {
     if (!restaurantInfo) {
       return "UberEats Order";
     }
@@ -103,40 +103,11 @@ export class UberEatsReceiptParser extends BaseReceiptParser {
     const parenMatch = restaurantInfo.match(/^([^(]+)\s*\(([^)]+)\)$/);
     if (parenMatch) {
       const restaurantName = parenMatch[1].trim();
-      const location = parenMatch[2].trim();
-      console.log("Found restaurant with location:", restaurantName, location);
-      return `${restaurantName} (${location})`;
-    }
-
-    const location = this.extractLocation(text);
-    if (location) {
-      return `${restaurantInfo} (${location})`;
+      console.log("Found restaurant name:", restaurantName);
+      return restaurantName;
     }
 
     console.log("Found restaurant name:", restaurantInfo);
     return restaurantInfo;
-  }
-
-  private extractLocation(text: string): string {
-    const cleanText = this.cleanText(text);
-    const addressPatterns = [
-      /Picked up from\s+(.+?)(?:\s+Delivered to)/i,
-      /(\d+\s+[^,]+(?:Ave|St|Street|Avenue|Road|Rd|Blvd|Boulevard|Drive|Dr|Lane|Ln|Way)[^,]*)/i,
-      /Delivery address:\s*(.+?)(?:\n|\r|$)/i,
-      /Address:\s*(.+?)(?:\n|\r|$)/i,
-      /([A-Za-z\s]+,\s*[A-Z]{2}\s+\d{5})/i,
-    ];
-
-    for (const pattern of addressPatterns) {
-      const match = cleanText.match(pattern);
-      if (match) {
-        const fullAddress = match[1].trim();
-        const addressParts = fullAddress.split(",");
-        const location = addressParts[0].trim();
-        console.log("Found location from address:", location);
-        return location;
-      }
-    }
-    return "";
   }
 }
