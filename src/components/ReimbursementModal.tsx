@@ -104,8 +104,11 @@ const ReimbursementModal: React.FC<ReimbursementModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      style={{ overflow: "hidden" }}
+    >
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">
@@ -113,8 +116,9 @@ const ReimbursementModal: React.FC<ReimbursementModalProps> = ({
             </h2>
             <p className="text-sm text-gray-500 mt-1">
               Enter your reimbursement total to find matching expense
-              combinations and bulk mark them as reimbursed. Matches prioritize
-              oldest expenses first.
+              combinations and bulk mark them as reimbursed.
+              <br />
+              Matches prioritize oldest expenses first.
             </p>
           </div>
           <button
@@ -164,8 +168,8 @@ const ReimbursementModal: React.FC<ReimbursementModalProps> = ({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          {!hasSearched ? (
+        {!hasSearched ? (
+          <div className="flex-1 flex items-center justify-center">
             <div className="p-8 text-center text-gray-500">
               <Search className="w-12 h-12 mx-auto mb-4 text-gray-300" />
               <p className="text-lg font-medium mb-2">Ready to find matches</p>
@@ -177,7 +181,9 @@ const ReimbursementModal: React.FC<ReimbursementModalProps> = ({
                 )}
               </p>
             </div>
-          ) : matches.length === 0 ? (
+          </div>
+        ) : matches.length === 0 ? (
+          <div className="flex-1 flex items-center justify-center">
             <div className="p-8 text-center text-gray-500">
               <div className="w-12 h-12 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
                 <Search className="w-6 h-6 text-gray-400" />
@@ -188,12 +194,15 @@ const ReimbursementModal: React.FC<ReimbursementModalProps> = ({
                 that could match.
               </p>
             </div>
-          ) : (
-            <div className="p-6">
-              <div className="mb-6">
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <div className="p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-3">
                   Found {matches.length} possible match
                   {matches.length > 1 ? "es" : ""}
+                  {!selectedMatch && " - Select one to proceed"}
                 </h3>
                 <div className="grid gap-3">
                   {matches.map((match, index) => {
@@ -262,62 +271,59 @@ const ReimbursementModal: React.FC<ReimbursementModalProps> = ({
                   })}
                 </div>
               </div>
-
-              {selectedMatch && (
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="font-medium text-gray-900">
-                      Selected Expenses
-                    </h4>
-                    <div className="text-right">
-                      <div className="font-semibold text-gray-900">
-                        Total: {formatCurrency(selectedMatch.total)}
-                      </div>
-                      {!selectedMatch.exactMatch && (
-                        <div className="text-xs text-gray-500">
-                          Difference:{" "}
-                          {formatCurrency(
-                            Math.abs(
-                              selectedMatch.total - parseFloat(targetAmount)
-                            )
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="space-y-3 mb-4">
-                    {selectedMatch.expenses.map((expense) => (
-                      <div
-                        key={expense.id}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-900 truncate">
-                            {expense.description}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {formatDate(expense.date)} • {expense.category}
-                          </div>
-                        </div>
-                        <div className="font-semibold text-gray-900">
-                          {formatCurrency(expense.amount)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <button
-                    onClick={handleMarkReimbursed}
-                    className="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center justify-center gap-2 font-medium"
-                  >
-                    <Check className="w-5 h-5" />
-                    Mark {selectedMatch.expenses.length} Expense
-                    {selectedMatch.expenses.length > 1 ? "s" : ""} as Reimbursed
-                  </button>
-                </div>
-              )}
             </div>
-          )}
-        </div>
+
+            {selectedMatch && (
+              <div className="flex-shrink-0 p-6 border-t border-gray-200 bg-gray-50">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-medium text-gray-900">
+                    Selected Match ({selectedMatch.expenses.length} expense
+                    {selectedMatch.expenses.length > 1 ? "s" : ""})
+                  </h4>
+                  <div className="text-right">
+                    <div className="font-semibold text-gray-900">
+                      Total: {formatCurrency(selectedMatch.total)}
+                    </div>
+                    {!selectedMatch.exactMatch && (
+                      <div className="text-xs text-gray-500">
+                        Difference:{" "}
+                        {formatCurrency(
+                          Math.abs(
+                            selectedMatch.total - parseFloat(targetAmount)
+                          )
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {selectedMatch.expenses.map((expense) => (
+                    <div
+                      key={expense.id}
+                      className="bg-white rounded-lg p-2 border border-gray-200 text-sm"
+                    >
+                      <div className="font-medium text-gray-900 truncate max-w-[200px]">
+                        {expense.description}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {formatDate(expense.date)} •{" "}
+                        {formatCurrency(expense.amount)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={handleMarkReimbursed}
+                  className="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center justify-center gap-2 font-medium"
+                >
+                  <Check className="w-5 h-5" />
+                  Mark {selectedMatch.expenses.length} Expense
+                  {selectedMatch.expenses.length > 1 ? "s" : ""} as Reimbursed
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

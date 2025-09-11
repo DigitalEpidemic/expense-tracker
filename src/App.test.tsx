@@ -568,8 +568,11 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Enter your reimbursement total to find matching expense combinations and bulk mark them as reimbursed. Matches prioritize oldest expenses first."
+        /Enter your reimbursement total to find matching expense combinations and bulk mark them as reimbursed/
       )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Matches prioritize oldest expenses first/)
     ).toBeInTheDocument();
   });
 

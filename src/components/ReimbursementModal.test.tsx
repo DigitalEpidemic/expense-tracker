@@ -59,8 +59,11 @@ describe("ReimbursementModal", () => {
     expect(screen.getByText("Match Reimbursements")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Enter your reimbursement total to find matching expense combinations and bulk mark them as reimbursed. Matches prioritize oldest expenses first."
+        /Enter your reimbursement total to find matching expense combinations and bulk mark them as reimbursed/
       )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Matches prioritize oldest expenses first/)
     ).toBeInTheDocument();
   });
 
@@ -198,7 +201,7 @@ describe("ReimbursementModal", () => {
       screen.getByText("Lunch at Cafe (Wed, Jan 15, 2025)")
     ).toBeInTheDocument(); // Appears in match summary with date
     expect(screen.getByText("Lunch at Cafe")).toBeInTheDocument(); // Appears in selected details without date
-    expect(screen.getAllByText("$25.50")).toHaveLength(2); // Appears in match and total
+    expect(screen.getAllByText("$25.50")).toHaveLength(1); // Appears in match button
   });
 
   it("should allow selecting a match", async () => {
@@ -217,7 +220,7 @@ describe("ReimbursementModal", () => {
     });
 
     // Should automatically select first match and show selected expenses
-    expect(screen.getByText("Selected Expenses")).toBeInTheDocument();
+    expect(screen.getByText(/Selected Match \(/)).toBeInTheDocument();
     expect(screen.getByText("Total: $25.50")).toBeInTheDocument();
   });
 
@@ -240,7 +243,7 @@ describe("ReimbursementModal", () => {
     await user.click(findButton);
 
     await waitFor(() => {
-      expect(screen.getByText("Selected Expenses")).toBeInTheDocument();
+      expect(screen.getByText(/Selected Match \(/)).toBeInTheDocument();
     });
 
     const markButton = screen.getByRole("button", {
@@ -275,7 +278,7 @@ describe("ReimbursementModal", () => {
 
     // Should show combined match
     await waitFor(() => {
-      expect(screen.getByText("Selected Expenses")).toBeInTheDocument();
+      expect(screen.getByText(/Selected Match \(/)).toBeInTheDocument();
     });
 
     const markButton = screen.getByRole("button", {
@@ -305,7 +308,7 @@ describe("ReimbursementModal", () => {
     await user.click(findButton);
 
     await waitFor(() => {
-      expect(screen.getByText("Selected Expenses")).toBeInTheDocument();
+      expect(screen.getByText(/Selected Match \(/)).toBeInTheDocument();
     });
 
     const markButton = screen.getByRole("button", {
@@ -369,7 +372,7 @@ describe("ReimbursementModal", () => {
     await user.click(findButton);
 
     await waitFor(() => {
-      expect(screen.getByText("Selected Expenses")).toBeInTheDocument();
+      expect(screen.getByText(/Selected Match \(/)).toBeInTheDocument();
     });
 
     // Should show expense details
@@ -378,9 +381,9 @@ describe("ReimbursementModal", () => {
     ).toBeInTheDocument(); // Appears in match summary with date
     expect(screen.getByText("Lunch at Cafe")).toBeInTheDocument(); // Appears in selected details without date
     expect(
-      screen.getByText("Wed, Jan 15, 2025 • Food & Dining")
+      screen.getByText(/Wed, Jan 15, 2025 • \$25\.50/)
     ).toBeInTheDocument();
-    expect(screen.getAllByText("$25.50")).toHaveLength(2);
+    expect(screen.getByText("$25.50")).toBeInTheDocument();
   });
 
   it("should truncate long expense lists in match summaries", async () => {
