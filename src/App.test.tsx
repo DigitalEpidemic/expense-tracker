@@ -214,7 +214,7 @@ describe("App", () => {
     });
 
     // Submit form
-    fireEvent.click(screen.getByText("Save"));
+    fireEvent.click(screen.getByRole("button", { name: "Save expense" }));
 
     await waitFor(() => {
       expect(mockAddExpense).toHaveBeenCalledWith({
@@ -388,7 +388,7 @@ describe("App", () => {
     expect(screen.getByDisplayValue("5.99")).toBeInTheDocument();
 
     // Submit form without changes
-    fireEvent.click(screen.getByText("Save"));
+    fireEvent.click(screen.getByRole("button", { name: "Save expense" }));
 
     await waitFor(() => {
       expect(mockUpdateExpense).toHaveBeenCalledWith("1", {

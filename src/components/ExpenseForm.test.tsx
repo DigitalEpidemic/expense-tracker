@@ -113,7 +113,7 @@ describe("ExpenseForm", () => {
     await user.type(screen.getByPlaceholderText("0.00"), "4.99");
     await user.selectOptions(screen.getByRole("combobox"), "Food & Dining");
 
-    await user.click(screen.getByText("Save"));
+    await user.click(screen.getByRole("button", { name: "Save expense" }));
 
     expect(onSubmit).toHaveBeenCalledWith({
       description: "Coffee",
@@ -225,7 +225,7 @@ describe("ExpenseForm", () => {
 
     render(<ExpenseForm {...defaultProps} onSubmit={onSubmit} />);
 
-    await user.click(screen.getByText("Save"));
+    await user.click(screen.getByRole("button", { name: "Save expense" }));
 
     expect(onSubmit).not.toHaveBeenCalled();
   });
@@ -410,7 +410,9 @@ describe("ExpenseForm", () => {
       expect(mockParseReceiptFile).toHaveBeenCalledWith(file2);
     });
 
-    const saveButton = screen.getByText("Save All (2)");
+    const saveButton = screen.getByRole("button", {
+      name: "Save all 2 expenses",
+    });
     await userEvent.click(saveButton);
 
     expect(onSubmit).toHaveBeenCalledWith([
@@ -479,7 +481,9 @@ describe("ExpenseForm", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("Save All (2)")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Save all 2 expenses" })
+      ).toBeInTheDocument();
     });
 
     // Now test the multi-form change handlers by modifying form fields
@@ -504,7 +508,9 @@ describe("ExpenseForm", () => {
     fireEvent.click(reimbursedCheckboxes[0]);
 
     // Submit the form
-    const saveButton = screen.getByText("Save All (2)");
+    const saveButton = screen.getByRole("button", {
+      name: "Save all 2 expenses",
+    });
     await userEvent.click(saveButton);
 
     // Verify that the first form data was updated correctly via handleMultiFormChange
@@ -581,7 +587,7 @@ describe("ExpenseForm", () => {
     fireEvent.click(reimbursedCheckbox);
 
     // Submit the form
-    const saveButton = screen.getByText("Save");
+    const saveButton = screen.getByRole("button", { name: "Save expense" });
     await userEvent.click(saveButton);
 
     // Verify that handleChange was used (single form data object submitted)
