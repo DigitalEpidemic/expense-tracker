@@ -12,7 +12,9 @@ export const findReimbursementMatches = (
   tolerance: number = 0.01
 ): ReimbursementMatch[] => {
   const matches: ReimbursementMatch[] = [];
-  const expenses = pendingExpenses.filter((expense) => !expense.reimbursed);
+  const expenses = pendingExpenses
+    .filter((expense) => !expense.reimbursed)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   if (expenses.length === 0) {
     return matches;

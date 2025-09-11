@@ -113,7 +113,8 @@ const ReimbursementModal: React.FC<ReimbursementModalProps> = ({
             </h2>
             <p className="text-sm text-gray-500 mt-1">
               Enter your reimbursement total to find matching expense
-              combinations and bulk mark them as reimbursed
+              combinations and bulk mark them as reimbursed. Matches prioritize
+              oldest expenses first.
             </p>
           </div>
           <button
@@ -239,11 +240,19 @@ const ReimbursementModal: React.FC<ReimbursementModalProps> = ({
                         <div className="text-sm text-gray-600">
                           {match.expenses.length <= 3
                             ? match.expenses
-                                .map((expense) => expense.description)
+                                .map(
+                                  (expense) =>
+                                    `${expense.description} (${formatDate(
+                                      expense.date
+                                    )})`
+                                )
                                 .join(", ")
                             : `${match.expenses
                                 .slice(0, 3)
-                                .map((e) => e.description)
+                                .map(
+                                  (e) =>
+                                    `${e.description} (${formatDate(e.date)})`
+                                )
                                 .join(", ")} and ${
                                 match.expenses.length - 3
                               } more`}

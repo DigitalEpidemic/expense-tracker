@@ -9,12 +9,13 @@ const createMockExpense = (
   id: string,
   amount: number,
   description: string,
-  reimbursed = false
+  reimbursed = false,
+  date = "2025-01-15"
 ): Expense => ({
   id,
   description,
   amount,
-  date: "2025-01-15",
+  date,
   category: "Food & Dining",
   reimbursed,
   userId: "user1",
@@ -127,6 +128,41 @@ describe("reimbursementMatcher", () => {
 
       // Should complete without timeout and return results
       expect(Array.isArray(matches)).toBe(true);
+    });
+
+    it("should prioritize oldest expenses first in matches", () => {
+      const expenses = [
+        createMockExpense("1", 25.0, "Recent Lunch", false, "2025-01-20"),
+        createMockExpense("2", 25.0, "Old Lunch", false, "2025-01-10"),
+        createMockExpense("3", 25.0, "Very Old Lunch", false, "2025-01-05"),
+      ];
+
+      const matches = findReimbursementMatches(expenses, 25.0);
+
+      expect(matches.length).toBeGreaterThan(0);
+      // Should match the oldest expense first
+      expect(matches[0].expenses[0].description).toBe("Very Old Lunch");
+      expect(matches[0].expenses[0].date).toBe("2025-01-05");
+    });
+
+    it("should prioritize oldest expenses in multi-expense matches", () => {
+      const expenses = [
+        createMockExpense("1", 15.0, "Recent Coffee", false, "2025-01-20"),
+        createMockExpense("2", 10.0, "Old Snack", false, "2025-01-10"),
+        createMockExpense("3", 15.0, "Very Old Coffee", false, "2025-01-05"),
+        createMockExpense("4", 10.0, "Recent Snack", false, "2025-01-18"),
+      ];
+
+      const matches = findReimbursementMatches(expenses, 25.0); // Looking for 25.0 (15 + 10)
+
+      expect(matches.length).toBeGreaterThan(0);
+      const exactMatch = matches.find((match) => match.exactMatch);
+      expect(exactMatch).toBeDefined();
+
+      // Should prioritize the combination with oldest expenses
+      const matchedDates = exactMatch!.expenses.map((e) => e.date).sort();
+      expect(matchedDates).toContain("2025-01-05"); // Should include the very old coffee
+      expect(matchedDates).toContain("2025-01-10"); // Should include the old snack
     });
   });
 

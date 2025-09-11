@@ -59,7 +59,7 @@ describe("ReimbursementModal", () => {
     expect(screen.getByText("Match Reimbursements")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Enter your reimbursement total to find matching expense combinations and bulk mark them as reimbursed"
+        "Enter your reimbursement total to find matching expense combinations and bulk mark them as reimbursed. Matches prioritize oldest expenses first."
       )
     ).toBeInTheDocument();
   });
@@ -194,7 +194,10 @@ describe("ReimbursementModal", () => {
 
     // Should show the match
     expect(screen.getByText("1 expense (exact match)")).toBeInTheDocument();
-    expect(screen.getAllByText("Lunch at Cafe")).toHaveLength(2); // Appears in match summary and selected details
+    expect(
+      screen.getByText("Lunch at Cafe (Wed, Jan 15, 2025)")
+    ).toBeInTheDocument(); // Appears in match summary with date
+    expect(screen.getByText("Lunch at Cafe")).toBeInTheDocument(); // Appears in selected details without date
     expect(screen.getAllByText("$25.50")).toHaveLength(2); // Appears in match and total
   });
 
@@ -370,7 +373,10 @@ describe("ReimbursementModal", () => {
     });
 
     // Should show expense details
-    expect(screen.getAllByText("Lunch at Cafe")).toHaveLength(2);
+    expect(
+      screen.getByText("Lunch at Cafe (Wed, Jan 15, 2025)")
+    ).toBeInTheDocument(); // Appears in match summary with date
+    expect(screen.getByText("Lunch at Cafe")).toBeInTheDocument(); // Appears in selected details without date
     expect(
       screen.getByText("Wed, Jan 15, 2025 • Food & Dining")
     ).toBeInTheDocument();
