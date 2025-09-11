@@ -902,8 +902,6 @@ describe("receiptParser", () => {
           "DoorDash Food Delivery - Order History.pdf"
         );
 
-        console.log(result);
-
         expect(result).not.toBeNull();
         expect(result?.description).toBe("Church's Chicken");
         expect(result?.amount).toBe("15.46");
@@ -1053,8 +1051,6 @@ describe("receiptParser", () => {
 
         const parser = new UberEatsReceiptParser();
         const result = parser.parse(mockFile, "Receipt_05Sep2025_173438.pdf");
-
-        console.log(result);
 
         expect(result).not.toBeNull();
         expect(result?.description).toBe("Firehouse Subs");

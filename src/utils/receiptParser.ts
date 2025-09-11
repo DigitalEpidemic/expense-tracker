@@ -1,6 +1,7 @@
 import * as pdfjsLib from "pdfjs-dist";
 import { BaseReceiptParser } from "./baseReceiptParser";
 import { DoorDashReceiptParser } from "./doorDashParser";
+import { ParsingLogger } from "./parsingLogger";
 import { UberEatsReceiptParser } from "./uberEatsParser";
 
 export interface ParsedReceiptData {
@@ -74,7 +75,7 @@ export async function parseReceiptFile(
     if (file.type === "application/pdf") {
       return await parsePDFWithPDFJS(file);
     } else if (file.type.startsWith("image/")) {
-      console.log("Image parsing not yet implemented - PDF parsing only");
+      ParsingLogger.logImageParsingNotImplemented();
       return null;
     }
 
@@ -125,9 +126,7 @@ async function parsePDFWithPDFJS(
     if (parser) {
       return parser.parse(fullText, file.name);
     } else {
-      console.log(
-        "No suitable parser found for receipt, attempting generic fallback"
-      );
+      ParsingLogger.logGenericFallback();
       // Fallback: create basic template with filename date
       const date =
         extractDateFromFileName(file.name) ||

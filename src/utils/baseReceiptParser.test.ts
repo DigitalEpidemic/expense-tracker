@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BaseReceiptParser } from "./baseReceiptParser";
 import { DOOR_DASH_PATTERNS } from "./doorDashParser";
+import { ParsingLogger } from "./parsingLogger";
 import { ParsedReceiptData } from "./receiptParser";
 import { UBER_EATS_PATTERNS } from "./uberEatsParser";
 
@@ -34,6 +35,7 @@ describe("BaseReceiptParser", () => {
 
   beforeEach(() => {
     parser = new TestReceiptParser();
+    ParsingLogger.reset();
   });
 
   describe("extractDateFromFileName", () => {
@@ -117,10 +119,6 @@ describe("BaseReceiptParser", () => {
   });
 
   describe("extractAmountFromText", () => {
-    beforeEach(() => {
-      vi.spyOn(console, "log").mockImplementation(() => {});
-    });
-
     it("should extract amount using UberEats patterns", () => {
       const text = "Total CA$25.50";
       const result = parser["extractAmountFromText"](
@@ -129,7 +127,7 @@ describe("BaseReceiptParser", () => {
       );
 
       expect(result).toBe("25.50");
-      expect(console.log).toHaveBeenCalledWith("Found amount:", "25.50");
+      expect(ParsingLogger.getDebugInfo().foundAmount).toBe("25.50");
     });
 
     it("should extract amount using DoorDash patterns", () => {
@@ -174,10 +172,6 @@ describe("BaseReceiptParser", () => {
   });
 
   describe("extractTextFromPatterns", () => {
-    beforeEach(() => {
-      vi.spyOn(console, "log").mockImplementation(() => {});
-    });
-
     it("should extract restaurant name using UberEats patterns", () => {
       const text = "Here's your receipt from McDonald's and Uber Eats";
       const result = parser["extractTextFromPatterns"](
@@ -186,10 +180,7 @@ describe("BaseReceiptParser", () => {
       );
 
       expect(result).toBe("McDonald's");
-      expect(console.log).toHaveBeenCalledWith(
-        "Found text match:",
-        "McDonald's"
-      );
+      expect(ParsingLogger.getDebugInfo().foundTextMatch).toBe("McDonald's");
     });
 
     it("should extract restaurant name using DoorDash patterns", () => {
@@ -234,10 +225,6 @@ describe("BaseReceiptParser", () => {
   });
 
   describe("parseDateFromText", () => {
-    beforeEach(() => {
-      vi.spyOn(console, "log").mockImplementation(() => {});
-    });
-
     it("should return empty string when no date found", () => {
       const text = "No date information here";
       const patterns = [/(January|February)\s+(\d{1,2}),?\s+(\d{4})/i];
@@ -265,7 +252,7 @@ describe("BaseReceiptParser", () => {
       );
 
       expect(result).toBe("");
-      expect(consoleSpy).toHaveBeenCalledWith("Could not parse date:", "Jan");
+      expect(ParsingLogger.getDebugInfo().failedDateParse).toBe("Jan");
 
       // Restore original method
       parser["parseMatchedDate"] = originalParseMatchedDate;
@@ -295,10 +282,6 @@ describe("BaseReceiptParser", () => {
   });
 
   describe("getDateFromTextOrFileName", () => {
-    beforeEach(() => {
-      vi.spyOn(console, "log").mockImplementation(() => {});
-    });
-
     it("should fallback to filename date when text date not found", () => {
       const text = "Order details without date";
       const fileName = "Receipt_05Mar2023.pdf";
@@ -311,14 +294,10 @@ describe("BaseReceiptParser", () => {
       );
 
       expect(result).toBe("2023-03-05");
-      expect(console.log).toHaveBeenCalledWith(
-        "No date found in text, checking filename:",
-        fileName
-      );
-      expect(console.log).toHaveBeenCalledWith(
-        "Final date used:",
-        "2023-03-05"
-      );
+      expect(ParsingLogger.getDebugInfo().dateFromFilename).toEqual({
+        filename: fileName,
+        finalDate: "2023-03-05",
+      });
     });
 
     it("should use current date when both text and filename fail", () => {
@@ -366,10 +345,6 @@ describe("BaseReceiptParser", () => {
   });
 
   describe("extractVendorName", () => {
-    beforeEach(() => {
-      vi.spyOn(console, "log").mockImplementation(() => {});
-    });
-
     it("should extract vendor name and return it", () => {
       const text = "Here's your receipt from McDonald's and Uber Eats";
       const result = parser["extractVendorName"](
@@ -379,10 +354,7 @@ describe("BaseReceiptParser", () => {
       );
 
       expect(result).toBe("McDonald's");
-      expect(console.log).toHaveBeenCalledWith(
-        "Found vendor name:",
-        "McDonald's"
-      );
+      expect(ParsingLogger.getDebugInfo().foundVendorName).toBe("McDonald's");
     });
 
     it("should return fallback name when no pattern matches", () => {
@@ -402,10 +374,7 @@ describe("BaseReceiptParser", () => {
       const result = parser["extractVendorName"](text, patterns, "Fallback");
 
       expect(result).toBe("McDonald's");
-      expect(console.log).toHaveBeenCalledWith(
-        "Found vendor name:",
-        "McDonald's"
-      );
+      expect(ParsingLogger.getDebugInfo().foundVendorName).toBe("McDonald's");
     });
 
     it("should handle empty vendor info", () => {
@@ -464,10 +433,6 @@ describe("BaseReceiptParser", () => {
   });
 
   describe("validateAndCreateResult", () => {
-    beforeEach(() => {
-      vi.spyOn(console, "log").mockImplementation(() => {});
-    });
-
     it("should return null when amount is missing", () => {
       const result = parser["validateAndCreateResult"](
         "McDonald's",
@@ -476,9 +441,7 @@ describe("BaseReceiptParser", () => {
       );
 
       expect(result).toBeNull();
-      expect(console.log).toHaveBeenCalledWith(
-        "Could not extract amount from Test receipt text"
-      );
+      expect(ParsingLogger.getDebugInfo().amountExtractionFailed).toBe("Test");
     });
 
     it("should create valid result with all fields", () => {
@@ -513,6 +476,10 @@ describe("BaseReceiptParser", () => {
   describe("parseWithErrorHandling", () => {
     beforeEach(() => {
       vi.spyOn(console, "error").mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
     });
 
     it("should execute parse logic and return result", () => {

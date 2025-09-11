@@ -1,3 +1,4 @@
+import { ParsingLogger } from "./parsingLogger";
 import { ParsedReceiptData } from "./receiptParser";
 
 export abstract class BaseReceiptParser {
@@ -54,7 +55,7 @@ export abstract class BaseReceiptParser {
     for (const pattern of patterns) {
       const match = cleanText.match(pattern);
       if (match) {
-        console.log("Found amount:", match[1]);
+        ParsingLogger.logAmount(match[1]);
         return match[1];
       }
     }
@@ -67,7 +68,7 @@ export abstract class BaseReceiptParser {
     for (const pattern of patterns) {
       const match = cleanText.match(pattern);
       if (match) {
-        console.log("Found text match:", match[1]);
+        ParsingLogger.logTextMatch(match[1]);
         return match[1].trim();
       }
     }
@@ -84,11 +85,11 @@ export abstract class BaseReceiptParser {
           const parsedDate = this.parseMatchedDate(match, pattern);
           if (!isNaN(parsedDate.getTime())) {
             const date = parsedDate.toISOString().split("T")[0];
-            console.log("Found date:", date);
+            ParsingLogger.logFoundDate(date);
             return date;
           }
         } catch {
-          console.log("Could not parse date:", match[1]);
+          ParsingLogger.logFailedDateParse(match[1]);
         }
       }
     }
@@ -183,9 +184,8 @@ export abstract class BaseReceiptParser {
     let date = this.parseDateFromText(text, patterns);
 
     if (!date) {
-      console.log("No date found in text, checking filename:", fileName);
       date = this.extractDateFromFileName(fileName) || this.getCurrentDate();
-      console.log("Final date used:", date);
+      ParsingLogger.logDateFromFilename(fileName, date);
     }
 
     return date;
@@ -205,11 +205,11 @@ export abstract class BaseReceiptParser {
     const parenMatch = vendorInfo.match(/^([^(]+)\s*\(([^)]+)\)$/);
     if (parenMatch) {
       const vendorName = parenMatch[1].trim();
-      console.log("Found vendor name:", vendorName);
+      ParsingLogger.logVendorName(vendorName);
       return vendorName;
     }
 
-    console.log("Found vendor name:", vendorInfo);
+    ParsingLogger.logVendorName(vendorInfo);
     return vendorInfo;
   }
 
@@ -234,9 +234,7 @@ export abstract class BaseReceiptParser {
     date: string
   ): ParsedReceiptData | null {
     if (!amount) {
-      console.log(
-        `Could not extract amount from ${this.getServiceName()} receipt text`
-      );
+      ParsingLogger.logAmountExtractionFailed(this.getServiceName());
       return null;
     }
 
