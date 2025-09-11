@@ -1,4 +1,3 @@
-// Receipt parsing utilities for extracting expense data from receipt images/PDFs
 import * as pdfjsLib from "pdfjs-dist";
 import { BaseReceiptParser } from "./baseReceiptParser";
 import { DoorDashReceiptParser } from "./doorDashParser";
@@ -14,7 +13,6 @@ export interface ParsedReceiptData {
 
 export { BaseReceiptParser };
 
-// Helper function for filename date extraction outside of classes
 function extractDateFromFileName(fileName: string): string | null {
   try {
     const match = fileName.match(/Receipt_(\d{2})(\w{3})(\d{4})/);

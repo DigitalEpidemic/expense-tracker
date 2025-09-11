@@ -6,11 +6,11 @@ import { UBER_EATS_PATTERNS } from "./uberEatsParser";
 
 // Create a concrete implementation for testing
 class TestReceiptParser extends BaseReceiptParser {
-  canParse(text: string, fileName: string): boolean {
+  canParse(): boolean {
     return true;
   }
 
-  parse(text: string, fileName: string): ParsedReceiptData | null {
+  parse(): ParsedReceiptData | null {
     return {
       description: "Test",
       amount: "10.00",
@@ -84,7 +84,9 @@ describe("BaseReceiptParser", () => {
     });
 
     it("should handle errors gracefully", () => {
-      const result = parser["extractDateFromFileName"](null as any);
+      const result = parser["extractDateFromFileName"](
+        null as unknown as string
+      );
       expect(result).toBeNull();
     });
   });

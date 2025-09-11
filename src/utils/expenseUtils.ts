@@ -1,8 +1,5 @@
 import { Expense, MonthlyGroup } from "../types/expense";
 
-/**
- * Creates a Date object from a YYYY-MM-DD string in local timezone
- */
 const parseLocalDate = (dateString: string): Date => {
   const [year, month, day] = dateString.split("-").map(Number);
   return new Date(year, month - 1, day);

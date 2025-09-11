@@ -81,7 +81,7 @@ export abstract class BaseReceiptParser {
       const match = cleanText.match(pattern);
       if (match) {
         try {
-          const parsedDate = this.parseMatchedDate(match, pattern, patterns);
+          const parsedDate = this.parseMatchedDate(match, pattern);
           if (!isNaN(parsedDate.getTime())) {
             const date = parsedDate.toISOString().split("T")[0];
             console.log("Found date:", date);
@@ -95,11 +95,7 @@ export abstract class BaseReceiptParser {
     return "";
   }
 
-  private parseMatchedDate(
-    match: RegExpMatchArray,
-    pattern: RegExp,
-    patterns: RegExp[]
-  ): Date {
+  private parseMatchedDate(match: RegExpMatchArray, pattern: RegExp): Date {
     const monthNamePatterns = [
       /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(\d{4})/i,
     ];

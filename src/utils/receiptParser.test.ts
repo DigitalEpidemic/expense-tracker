@@ -939,7 +939,7 @@ describe("receiptParser", () => {
       });
 
       it("should handle parsing errors gracefully", () => {
-        const text = null as any; // Force an error
+        const text = null as unknown as string; // Force an error
 
         const consoleSpy = vi
           .spyOn(console, "error")
@@ -1074,7 +1074,7 @@ describe("receiptParser", () => {
       });
 
       it("should handle parsing errors gracefully", () => {
-        const text = null as any; // Force an error
+        const text = null as unknown as string; // Force an error
 
         const consoleSpy = vi
           .spyOn(console, "error")
