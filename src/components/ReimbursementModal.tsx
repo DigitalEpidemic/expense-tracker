@@ -258,7 +258,7 @@ const ReimbursementModal: React.FC<ReimbursementModalProps> = ({
                           </div>
                         </div>
                         <div className="text-xs text-gray-600 line-clamp-2">
-                          {match.expenses.length <= 1
+                          {match.expenses.length <= 3
                             ? match.expenses
                                 .map(
                                   (expense) =>
@@ -268,13 +268,13 @@ const ReimbursementModal: React.FC<ReimbursementModalProps> = ({
                                 )
                                 .join(", ")
                             : `${match.expenses
-                                .slice(0, 1)
+                                .slice(0, 2)
                                 .map(
                                   (e) =>
                                     `${e.description} (${formatDate(e.date)})`
                                 )
                                 .join(", ")} and ${
-                                match.expenses.length - 1
+                                match.expenses.length - 2
                               } more`}
                         </div>
                       </button>

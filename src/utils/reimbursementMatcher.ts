@@ -1,8 +1,8 @@
 import { Expense } from "../types/expense";
 
 // Configuration constants - adjust these to tune performance vs completeness
-const MAX_TOTAL_MATCHES = 100; // Maximum number of matches to return
-const MAX_COMBINATIONS_PER_AMOUNT = 20; // Maximum combinations to generate per amount group
+const MAX_TOTAL_MATCHES = 500; // Maximum number of matches to return
+const MAX_COMBINATIONS_PER_AMOUNT = 100; // Maximum combinations to generate per amount group
 const MAX_COMBINATION_SIZE = 10; // Maximum number of expenses in a single match
 
 export interface ReimbursementMatch {
