@@ -58,7 +58,8 @@ console.error = (...args: unknown[]) => {
     message.includes("Error deleting expense:") ||
     message.includes("Sign in error:") ||
     message.includes("Sign out error:") ||
-    message.includes("Failed to parse receipt:")
+    message.includes("Failed to parse receipt:") ||
+    message.includes("Error marking expenses as reimbursed:")
   ) {
     return;
   }

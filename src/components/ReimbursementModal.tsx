@@ -95,7 +95,7 @@ const ReimbursementModal: React.FC<ReimbursementModalProps> = ({
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !isSearching && targetAmount) {
       handleSearch();
     }
@@ -109,11 +109,11 @@ const ReimbursementModal: React.FC<ReimbursementModalProps> = ({
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">
-              Find Reimbursement Matches
+              Match Reimbursements
             </h2>
             <p className="text-sm text-gray-500 mt-1">
-              Enter the total reimbursement amount to find matching expense
-              combinations
+              Enter your reimbursement total to find matching expense
+              combinations and bulk mark them as reimbursed
             </p>
           </div>
           <button
@@ -142,7 +142,7 @@ const ReimbursementModal: React.FC<ReimbursementModalProps> = ({
                   min="0"
                   value={targetAmount}
                   onChange={(e) => setTargetAmount(e.target.value)}
-                  onKeyPress={handleKeyPress}
+                  onKeyDown={handleKeyDown}
                   placeholder="520.21"
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   disabled={isSearching}
