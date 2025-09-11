@@ -1,9 +1,17 @@
-import { LogOut, Receipt } from "lucide-react";
-import React from "react";
+import { LogOut, Receipt, User } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 
 const Header: React.FC = () => {
   const { user, logout } = useAuth();
+  const [imageError, setImageError] = useState(false);
+  const [cachedImageUrl, setCachedImageUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user?.photoURL && !cachedImageUrl) {
+      setCachedImageUrl(user.photoURL);
+    }
+  }, [user?.photoURL, cachedImageUrl]);
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -18,12 +26,18 @@ const Header: React.FC = () => {
 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
-              {user?.photoURL && (
+              {cachedImageUrl && !imageError ? (
                 <img
-                  src={user.photoURL}
-                  alt={user.displayName || "User"}
+                  src={cachedImageUrl}
+                  alt={user?.displayName || "User"}
                   className="w-8 h-8 rounded-full"
+                  onError={() => setImageError(true)}
+                  loading="lazy"
                 />
+              ) : (
+                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center" data-testid="user-fallback-icon">
+                  <User className="w-4 h-4 text-gray-500" />
+                </div>
               )}
               <span className="text-sm font-medium text-gray-700 hidden sm:block">
                 {user?.displayName}

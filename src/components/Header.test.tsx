@@ -130,4 +130,92 @@ describe("Header", () => {
     // Should not display any user name
     expect(screen.queryByText("John Doe")).not.toBeInTheDocument();
   });
+
+  it("should show fallback User icon when image fails to load", () => {
+    const mockUser = {
+      displayName: "John Doe",
+      photoURL: "https://example.com/photo.jpg",
+    } as User;
+    const mockLogout = vi.fn();
+
+    vi.mocked(useAuthModule.useAuth).mockReturnValue({
+      user: mockUser,
+      logout: mockLogout,
+      loading: false,
+      signInWithGoogle: vi.fn(),
+    });
+
+    render(<Header />);
+
+    const profileImage = screen.getByAltText("John Doe");
+    expect(profileImage).toBeInTheDocument();
+
+    // Simulate image load error
+    fireEvent.error(profileImage);
+
+    // Should show fallback User icon instead
+    expect(screen.queryByAltText("John Doe")).not.toBeInTheDocument();
+    expect(screen.getByTestId("user-fallback-icon")).toBeInTheDocument();
+  });
+
+  it("should display User icon fallback when user has no photoURL", () => {
+    const mockUser = {
+      displayName: "John Doe",
+      photoURL: null,
+    } as User;
+    const mockLogout = vi.fn();
+
+    vi.mocked(useAuthModule.useAuth).mockReturnValue({
+      user: mockUser,
+      logout: mockLogout,
+      loading: false,
+      signInWithGoogle: vi.fn(),
+    });
+
+    render(<Header />);
+
+    expect(screen.getByText("John Doe")).toBeInTheDocument();
+    expect(screen.queryByAltText("John Doe")).not.toBeInTheDocument();
+    expect(screen.getByTestId("user-fallback-icon")).toBeInTheDocument();
+  });
+
+  it("should cache the photoURL to avoid repeated requests", () => {
+    const mockUser = {
+      displayName: "John Doe",
+      photoURL: "https://example.com/photo.jpg",
+    } as User;
+    const mockLogout = vi.fn();
+
+    const mockUseAuth = vi.mocked(useAuthModule.useAuth);
+    mockUseAuth.mockReturnValue({
+      user: mockUser,
+      logout: mockLogout,
+      loading: false,
+      signInWithGoogle: vi.fn(),
+    });
+
+    const { rerender } = render(<Header />);
+
+    // Initial render should show the image
+    expect(screen.getByAltText("John Doe")).toHaveAttribute(
+      "src",
+      "https://example.com/photo.jpg"
+    );
+
+    // Update user with same photoURL (simulating re-render)
+    mockUseAuth.mockReturnValue({
+      user: mockUser,
+      logout: mockLogout,
+      loading: false,
+      signInWithGoogle: vi.fn(),
+    });
+
+    rerender(<Header />);
+
+    // Should still show the same cached image
+    expect(screen.getByAltText("John Doe")).toHaveAttribute(
+      "src",
+      "https://example.com/photo.jpg"
+    );
+  });
 });
