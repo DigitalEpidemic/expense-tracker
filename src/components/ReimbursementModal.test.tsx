@@ -92,7 +92,7 @@ describe("ReimbursementModal", () => {
     const user = userEvent.setup();
     render(<ReimbursementModal {...defaultProps} />);
 
-    const input = screen.getByPlaceholderText("520.21");
+    const input = screen.getByPlaceholderText("168.60");
     await user.type(input, "25.50");
 
     expect(input).toHaveValue(25.5);
@@ -105,10 +105,10 @@ describe("ReimbursementModal", () => {
     render(<ReimbursementModal {...defaultProps} />);
 
     // Enter invalid amount
-    const input = screen.getByPlaceholderText("520.21");
+    const input = screen.getByPlaceholderText("168.60");
     await user.type(input, "0");
 
-    const findButton = screen.getByRole("button", { name: "Find Matches" });
+    const findButton = screen.getByRole("button", { name: "Find matches" });
     await user.click(findButton);
 
     expect(toast.default.error).toHaveBeenCalledWith(
@@ -122,14 +122,16 @@ describe("ReimbursementModal", () => {
 
     render(<ReimbursementModal {...defaultProps} />);
 
-    const input = screen.getByPlaceholderText("520.21");
-    const findButton = screen.getByRole("button", { name: "Find Matches" });
+    const input = screen.getByPlaceholderText("168.60");
+    const findButton = screen.getByRole("button", { name: "Find matches" });
 
     await user.type(input, "25.50");
     await user.click(findButton);
 
     // Should show searching state
-    expect(screen.getByText("Searching...")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Searching for matches" })
+    ).toBeInTheDocument();
 
     // Wait for search to complete
     await waitFor(() => {
@@ -145,7 +147,7 @@ describe("ReimbursementModal", () => {
 
     render(<ReimbursementModal {...defaultProps} />);
 
-    const input = screen.getByPlaceholderText("520.21");
+    const input = screen.getByPlaceholderText("168.60");
     await user.type(input, "25.50");
 
     fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
@@ -163,8 +165,8 @@ describe("ReimbursementModal", () => {
 
     render(<ReimbursementModal {...defaultProps} />);
 
-    const input = screen.getByPlaceholderText("520.21");
-    const findButton = screen.getByRole("button", { name: "Find Matches" });
+    const input = screen.getByPlaceholderText("168.60");
+    const findButton = screen.getByRole("button", { name: "Find matches" });
 
     await user.type(input, "999.99"); // Amount that won't match
     await user.click(findButton);
@@ -185,8 +187,8 @@ describe("ReimbursementModal", () => {
 
     render(<ReimbursementModal {...defaultProps} />);
 
-    const input = screen.getByPlaceholderText("520.21");
-    const findButton = screen.getByRole("button", { name: "Find Matches" });
+    const input = screen.getByPlaceholderText("168.60");
+    const findButton = screen.getByRole("button", { name: "Find matches" });
 
     await user.type(input, "25.50");
     await user.click(findButton);
@@ -209,8 +211,8 @@ describe("ReimbursementModal", () => {
 
     render(<ReimbursementModal {...defaultProps} />);
 
-    const input = screen.getByPlaceholderText("520.21");
-    const findButton = screen.getByRole("button", { name: "Find Matches" });
+    const input = screen.getByPlaceholderText("168.60");
+    const findButton = screen.getByRole("button", { name: "Find matches" });
 
     await user.type(input, "25.50");
     await user.click(findButton);
@@ -236,8 +238,8 @@ describe("ReimbursementModal", () => {
       />
     );
 
-    const input = screen.getByPlaceholderText("520.21");
-    const findButton = screen.getByRole("button", { name: "Find Matches" });
+    const input = screen.getByPlaceholderText("168.60");
+    const findButton = screen.getByRole("button", { name: "Find matches" });
 
     await user.type(input, "25.50");
     await user.click(findButton);
@@ -265,8 +267,8 @@ describe("ReimbursementModal", () => {
 
     render(<ReimbursementModal {...defaultProps} />);
 
-    const input = screen.getByPlaceholderText("520.21");
-    const findButton = screen.getByRole("button", { name: "Find Matches" });
+    const input = screen.getByPlaceholderText("168.60");
+    const findButton = screen.getByRole("button", { name: "Find matches" });
 
     // This should match lunch + coffee (25.50 + 15.75 = 41.25)
     await user.type(input, "41.25");
@@ -301,8 +303,8 @@ describe("ReimbursementModal", () => {
       />
     );
 
-    const input = screen.getByPlaceholderText("520.21");
-    const findButton = screen.getByRole("button", { name: "Find Matches" });
+    const input = screen.getByPlaceholderText("168.60");
+    const findButton = screen.getByRole("button", { name: "Find matches" });
 
     await user.type(input, "25.50");
     await user.click(findButton);
@@ -334,13 +336,13 @@ describe("ReimbursementModal", () => {
 
     // Should be back to initial state
     expect(screen.getByText("Ready to find matches")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("520.21")).toHaveValue(null);
+    expect(screen.getByPlaceholderText("168.60")).toHaveValue(null);
   });
 
   it("should disable search when no amount is entered", () => {
     render(<ReimbursementModal {...defaultProps} />);
 
-    const findButton = screen.getByRole("button", { name: "Find Matches" });
+    const findButton = screen.getByRole("button", { name: "Find matches" });
     expect(findButton).toBeDisabled();
   });
 
@@ -349,15 +351,17 @@ describe("ReimbursementModal", () => {
 
     render(<ReimbursementModal {...defaultProps} />);
 
-    const input = screen.getByPlaceholderText("520.21");
-    const findButton = screen.getByRole("button", { name: "Find Matches" });
+    const input = screen.getByPlaceholderText("168.60");
+    const findButton = screen.getByRole("button", { name: "Find matches" });
 
     await user.type(input, "25.50");
     await user.click(findButton);
 
     // During search
     expect(input).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Searching..." })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Searching for matches" })
+    ).toBeDisabled();
   });
 
   it("should show expense details in selected match", async () => {
@@ -365,8 +369,8 @@ describe("ReimbursementModal", () => {
 
     render(<ReimbursementModal {...defaultProps} />);
 
-    const input = screen.getByPlaceholderText("520.21");
-    const findButton = screen.getByRole("button", { name: "Find Matches" });
+    const input = screen.getByPlaceholderText("168.60");
+    const findButton = screen.getByRole("button", { name: "Find matches" });
 
     await user.type(input, "25.50");
     await user.click(findButton);
@@ -394,8 +398,8 @@ describe("ReimbursementModal", () => {
 
     render(<ReimbursementModal {...defaultProps} expenses={manyExpenses} />);
 
-    const input = screen.getByPlaceholderText("520.21");
-    const findButton = screen.getByRole("button", { name: "Find Matches" });
+    const input = screen.getByPlaceholderText("168.60");
+    const findButton = screen.getByRole("button", { name: "Find matches" });
 
     await user.type(input, "50.00"); // Should match multiple expenses
     await user.click(findButton);
