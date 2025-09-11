@@ -1,6 +1,34 @@
 import { BaseReceiptParser } from "./baseReceiptParser";
 import { ParsedReceiptData } from "./receiptParser";
 
+export const UBER_EATS_PATTERNS = {
+  totalPatterns: [
+    /Total\s+CA\$(\d+\.\d{2})/i,
+    /Total CA\$(\d+\.\d{2})/i,
+    /CA\$(\d+\.\d{2})\s*You\s+ordered/i,
+    /Total\s+\$(\d+\.\d{2})/i,
+    /Total \$(\d+\.\d{2})/i,
+    /\$(\d+\.\d{2})\s*You\s+ordered/i,
+    /\$(\d+\.\d{2})\s*(?:Visa|Mastercard|Card|Payment)/i,
+    /Total:\s*\$(\d+\.\d{2})/i,
+    /Grand\s+Total\s*\$(\d+\.\d{2})/i,
+    /Amount\s+Charged\s*\$(\d+\.\d{2})/i,
+  ],
+  restaurantLocationPatterns: [
+    /Here's your receipt from (.+?) and Uber Eats/i,
+    /receipt from (.+?) and Uber Eats/i,
+    /You ordered from (.+?)(?:\s+Picked up|\s*$)/i,
+    /Order from (.+?)(?:\s|$)/i,
+    /(.+?)\s+Order/i,
+    /Receipt\s+(.+?)(?:\s+\d+|\s*$)/i,
+  ],
+  datePatterns: [
+    /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(\d{4})/i,
+    /(\d{1,2}\/\d{1,2}\/\d{4})/,
+    /(\d{4}-\d{2}-\d{2})/,
+  ],
+};
+
 export class UberEatsReceiptParser extends BaseReceiptParser {
   canParse(text: string, fileName: string): boolean {
     const lowerText = text.toLowerCase();
@@ -39,43 +67,22 @@ export class UberEatsReceiptParser extends BaseReceiptParser {
 
   parse(text: string, fileName: string): ParsedReceiptData | null {
     return this.parseWithErrorHandling(text, fileName, (text, fileName) => {
-      const totalPatterns = [
-        /Total\s+CA\$(\d+\.\d{2})/i,
-        /Total CA\$(\d+\.\d{2})/i,
-        /CA\$(\d+\.\d{2})\s*You\s+ordered/i,
-        /Total\s+\$(\d+\.\d{2})/i,
-        /Total \$(\d+\.\d{2})/i,
-        /\$(\d+\.\d{2})\s*You\s+ordered/i,
-        /\$(\d+\.\d{2})\s*(?:Visa|Mastercard|Card|Payment)/i,
-        /Total:\s*\$(\d+\.\d{2})/i,
-        /Grand\s+Total\s*\$(\d+\.\d{2})/i,
-        /Amount\s+Charged\s*\$(\d+\.\d{2})/i,
-      ];
-
-      const amount = this.extractAmountFromText(text, totalPatterns);
-
-      const restaurantLocationPatterns = [
-        /Here's your receipt from (.+?) and Uber Eats/i,
-        /receipt from (.+?) and Uber Eats/i,
-        /You ordered from (.+?)(?:\s+Picked up|\s*$)/i,
-        /Order from (.+?)(?:\s|$)/i,
-        /(.+?)\s+Order/i,
-        /Receipt\s+(.+?)(?:\s+\d+|\s*$)/i,
-      ];
+      const amount = this.extractAmountFromText(
+        text,
+        UBER_EATS_PATTERNS.totalPatterns
+      );
 
       const description = this.extractVendorName(
         text,
-        restaurantLocationPatterns,
+        UBER_EATS_PATTERNS.restaurantLocationPatterns,
         "UberEats Order"
       );
 
-      const datePatterns = [
-        /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(\d{4})/i,
-        /(\d{1,2}\/\d{1,2}\/\d{4})/,
-        /(\d{4}-\d{2}-\d{2})/,
-      ];
-
-      const date = this.getDateFromTextOrFileName(text, fileName, datePatterns);
+      const date = this.getDateFromTextOrFileName(
+        text,
+        fileName,
+        UBER_EATS_PATTERNS.datePatterns
+      );
 
       return this.validateAndCreateResult(description, amount, date);
     });

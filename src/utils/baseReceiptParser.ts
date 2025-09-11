@@ -111,7 +111,11 @@ export abstract class BaseReceiptParser {
 
     const dateSlashPatterns = [/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/];
 
-    if (monthNamePatterns.includes(pattern)) {
+    if (
+      monthNamePatterns.some(
+        (p) => p.source === pattern.source && p.flags === pattern.flags
+      )
+    ) {
       const monthName = match[1];
       const day = parseInt(match[2]);
       const year = parseInt(match[3]);
@@ -132,7 +136,11 @@ export abstract class BaseReceiptParser {
       return new Date(year, monthIndex, day);
     }
 
-    if (monthAbbrPatterns.includes(pattern)) {
+    if (
+      monthAbbrPatterns.some(
+        (p) => p.source === pattern.source && p.flags === pattern.flags
+      )
+    ) {
       const monthAbbr = match[1];
       const day = parseInt(match[2]);
       const year = parseInt(match[3]);
@@ -156,7 +164,11 @@ export abstract class BaseReceiptParser {
       }
     }
 
-    if (dateSlashPatterns.includes(pattern)) {
+    if (
+      dateSlashPatterns.some(
+        (p) => p.source === pattern.source && p.flags === pattern.flags
+      )
+    ) {
       const month = parseInt(match[1]);
       const day = parseInt(match[2]);
       let year = parseInt(match[3]);
