@@ -118,14 +118,14 @@ describe("expenseUtils", () => {
 
   describe("formatDate", () => {
     it("should format dates correctly", () => {
-      expect(formatDate("2024-01-15")).toBe("Jan 15, 2024");
-      expect(formatDate("2024-12-31")).toBe("Dec 31, 2024");
-      expect(formatDate("2024-07-04")).toBe("Jul 4, 2024");
+      expect(formatDate("2024-01-15")).toBe("Mon, Jan 15, 2024");
+      expect(formatDate("2024-12-31")).toBe("Tue, Dec 31, 2024");
+      expect(formatDate("2024-07-04")).toBe("Thu, Jul 4, 2024");
     });
 
     it("should handle single digit days and months", () => {
-      expect(formatDate("2024-01-05")).toBe("Jan 5, 2024");
-      expect(formatDate("2024-09-01")).toBe("Sep 1, 2024");
+      expect(formatDate("2024-01-05")).toBe("Fri, Jan 5, 2024");
+      expect(formatDate("2024-09-01")).toBe("Sun, Sep 1, 2024");
     });
   });
 

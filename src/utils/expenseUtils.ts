@@ -48,6 +48,7 @@ export const formatCurrency = (amount: number): string => {
 export const formatDate = (dateString: string): string => {
   const date = parseLocalDate(dateString);
   return date.toLocaleDateString("en-US", {
+    weekday: "short",
     year: "numeric",
     month: "short",
     day: "numeric",
