@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { Calculator, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Toaster } from "react-hot-toast";
 import { useAuth } from "./hooks/useAuth";
@@ -18,6 +18,7 @@ import ExpenseList from "./components/ExpenseList";
 import FilterBar from "./components/FilterBar";
 import Header from "./components/Header";
 import LoadingSpinner from "./components/LoadingSpinner";
+import ReimbursementModal from "./components/ReimbursementModal";
 import SummaryCards from "./components/SummaryCards";
 
 function App() {
@@ -35,6 +36,8 @@ function App() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [filter, setFilter] = useState<"all" | "reimbursed" | "pending">("all");
+  const [isReimbursementModalOpen, setIsReimbursementModalOpen] =
+    useState(false);
 
   const filteredExpenses = useMemo(() => {
     return expenses.filter((expense) => {
@@ -99,6 +102,12 @@ function App() {
     setEditingExpense(null);
   };
 
+  const handleBulkMarkReimbursed = async (expenseIds: string[]) => {
+    for (const id of expenseIds) {
+      await toggleReimbursed(id, true);
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -135,13 +144,23 @@ function App() {
           <div className="flex-1">
             <FilterBar filter={filter} onFilterChange={setFilter} />
           </div>
-          <button
-            onClick={() => setIsFormOpen(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center gap-2 font-medium"
-          >
-            <Plus className="w-5 h-5" />
-            Add Expense
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => setIsReimbursementModalOpen(true)}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center justify-center gap-2 font-medium"
+            >
+              <Calculator className="w-5 h-5" />
+              <span className="hidden sm:inline">Find Reimbursement</span>
+              <span className="sm:hidden">Reimbursement</span>
+            </button>
+            <button
+              onClick={() => setIsFormOpen(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center gap-2 font-medium"
+            >
+              <Plus className="w-5 h-5" />
+              Add Expense
+            </button>
+          </div>
         </div>
 
         {/* Expenses List */}
@@ -268,6 +287,13 @@ function App() {
             ? "Edit Expense"
             : "Add New Expense"
         }
+      />
+
+      <ReimbursementModal
+        isOpen={isReimbursementModalOpen}
+        onClose={() => setIsReimbursementModalOpen(false)}
+        expenses={expenses}
+        onMarkReimbursed={handleBulkMarkReimbursed}
       />
 
       <Toaster position="top-right" />
