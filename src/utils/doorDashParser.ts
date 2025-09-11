@@ -20,7 +20,7 @@ export class DoorDashReceiptParser extends BaseReceiptParser {
   }
 
   parse(text: string, fileName: string): ParsedReceiptData | null {
-    try {
+    return this.parseWithErrorHandling(text, fileName, (text, fileName) => {
       const totalPatterns = [
         /Dasher Tip\s+CA\$[\d.]+\s+Total\s+CA\$(\d+\.\d{2})/i,
         /Total\s+CA\$(\d+\.\d{2})(?:\s+Address|\s*$)/i,
@@ -50,11 +50,11 @@ export class DoorDashReceiptParser extends BaseReceiptParser {
         /Delivery\s+from\s+(.+?)(?:\n|\r|$)/i,
       ];
 
-      const restaurantName = this.extractTextFromPatterns(
+      const description = this.extractVendorName(
         text,
-        restaurantPatterns
+        restaurantPatterns,
+        "DoorDash Order"
       );
-      const description = restaurantName || "DoorDash Order";
 
       const datePatterns = [
         /Date:\s*(\w{3})\s+(\d{1,2}),?\s+(\d{4})/i,
@@ -67,21 +67,7 @@ export class DoorDashReceiptParser extends BaseReceiptParser {
 
       const date = this.getDateFromTextOrFileName(text, fileName, datePatterns);
 
-      if (!amount) {
-        console.log("Could not extract amount from DoorDash receipt text");
-        return null;
-      }
-
-      return {
-        description,
-        amount,
-        date,
-        category: this.getDefaultCategory(),
-        confidence: 0.9,
-      };
-    } catch (error) {
-      console.error("Error parsing DoorDash text:", error);
-      return null;
-    }
+      return this.validateAndCreateResult(description, amount, date);
+    });
   }
 }

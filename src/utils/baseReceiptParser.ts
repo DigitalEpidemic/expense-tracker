@@ -182,4 +182,77 @@ export abstract class BaseReceiptParser {
 
     return date;
   }
+
+  protected extractVendorName(
+    text: string,
+    patterns: RegExp[],
+    fallbackName: string
+  ): string {
+    const vendorInfo = this.extractTextFromPatterns(text, patterns);
+
+    if (!vendorInfo) {
+      return fallbackName;
+    }
+
+    const parenMatch = vendorInfo.match(/^([^(]+)\s*\(([^)]+)\)$/);
+    if (parenMatch) {
+      const vendorName = parenMatch[1].trim();
+      console.log("Found vendor name:", vendorName);
+      return vendorName;
+    }
+
+    console.log("Found vendor name:", vendorInfo);
+    return vendorInfo;
+  }
+
+  protected calculateConfidence(
+    amount: string,
+    description: string,
+    date: string
+  ): number {
+    let confidence = 0.3;
+
+    if (amount) confidence += 0.4;
+    if (description && description !== this.getServiceName() + " Order")
+      confidence += 0.2;
+    if (date && date !== this.getCurrentDate()) confidence += 0.1;
+
+    return Math.round(Math.min(confidence, 0.9) * 10) / 10;
+  }
+
+  protected validateAndCreateResult(
+    description: string,
+    amount: string,
+    date: string
+  ): ParsedReceiptData | null {
+    if (!amount) {
+      console.log(
+        `Could not extract amount from ${this.getServiceName()} receipt text`
+      );
+      return null;
+    }
+
+    const confidence = this.calculateConfidence(amount, description, date);
+
+    return {
+      description,
+      amount,
+      date,
+      category: this.getDefaultCategory(),
+      confidence,
+    };
+  }
+
+  protected parseWithErrorHandling(
+    text: string,
+    fileName: string,
+    parseLogic: (text: string, fileName: string) => ParsedReceiptData | null
+  ): ParsedReceiptData | null {
+    try {
+      return parseLogic(text, fileName);
+    } catch (error) {
+      console.error(`Error parsing ${this.getServiceName()} text:`, error);
+      return null;
+    }
+  }
 }

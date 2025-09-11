@@ -38,7 +38,7 @@ export class UberEatsReceiptParser extends BaseReceiptParser {
   }
 
   parse(text: string, fileName: string): ParsedReceiptData | null {
-    try {
+    return this.parseWithErrorHandling(text, fileName, (text, fileName) => {
       const totalPatterns = [
         /Total\s+CA\$(\d+\.\d{2})/i,
         /Total CA\$(\d+\.\d{2})/i,
@@ -63,11 +63,11 @@ export class UberEatsReceiptParser extends BaseReceiptParser {
         /Receipt\s+(.+?)(?:\s+\d+|\s*$)/i,
       ];
 
-      const restaurantInfo = this.extractTextFromPatterns(
+      const description = this.extractVendorName(
         text,
-        restaurantLocationPatterns
+        restaurantLocationPatterns,
+        "UberEats Order"
       );
-      const description = this.buildDescription(restaurantInfo);
 
       const datePatterns = [
         /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(\d{4})/i,
@@ -77,37 +77,7 @@ export class UberEatsReceiptParser extends BaseReceiptParser {
 
       const date = this.getDateFromTextOrFileName(text, fileName, datePatterns);
 
-      if (!amount) {
-        console.log("Could not extract amount from receipt text");
-        return null;
-      }
-
-      return {
-        description,
-        amount,
-        date,
-        category: this.getDefaultCategory(),
-        confidence: 0.9,
-      };
-    } catch (error) {
-      console.error("Error parsing UberEats text:", error);
-      return null;
-    }
-  }
-
-  private buildDescription(restaurantInfo: string): string {
-    if (!restaurantInfo) {
-      return "UberEats Order";
-    }
-
-    const parenMatch = restaurantInfo.match(/^([^(]+)\s*\(([^)]+)\)$/);
-    if (parenMatch) {
-      const restaurantName = parenMatch[1].trim();
-      console.log("Found restaurant name:", restaurantName);
-      return restaurantName;
-    }
-
-    console.log("Found restaurant name:", restaurantInfo);
-    return restaurantInfo;
+      return this.validateAndCreateResult(description, amount, date);
+    });
   }
 }
