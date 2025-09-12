@@ -1,6 +1,6 @@
 # Firebase Expense Tracker
 
-A modern expense tracking application built with React, TypeScript, Tailwind CSS, and Firebase.
+A modern expense tracking application built with React, TypeScript, Tailwind CSS, and Firebase. Features intelligent receipt parsing for UberEats and DoorDash receipts with advanced reimbursement matching capabilities.
 
 ## Features
 
@@ -12,12 +12,11 @@ A modern expense tracking application built with React, TypeScript, Tailwind CSS
 - ✅ **Reimbursement Tracking** - Mark expenses as reimbursed or pending with one-click toggle
 - 📈 **Monthly Grouping** - Automatic grouping by month with total, reimbursed, and pending amounts
 - 🔍 **Smart Filtering** - Filter expenses by reimbursement status (All, Reimbursed, Pending)
-- 📄 **Receipt Upload & Parsing** - Upload receipt images (JPG, PNG, WebP) or PDFs and automatically extract expense data
+- 📄 **PDF Receipt Parsing** - Upload UberEats or DoorDash PDF receipts and automatically extract expense data
 - 🔄 **Bulk Upload** - Upload multiple receipts at once for batch processing
 - 📋 **Expense Duplication** - Quickly duplicate existing expenses with one click
 - 🏷️ **Summary Dashboard** - View total, reimbursed, and pending amounts at a glance
-- 🔒 **Secure Data Storage** - User-specific data isolation with Firestore security rules
-- 🎨 **Modern UI/UX** - Clean, intuitive interface with smooth animations and transitions
+- 🧮 **Smart Reimbursement Matching** - Advanced algorithm to find optimal expense combinations that match reimbursement amounts
 
 ## Setup
 
@@ -71,28 +70,32 @@ npm install
 npm run dev
 ```
 
+## Testing
+
+Run the comprehensive test suite:
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode during development
+npm run test:watch
+
+# Run tests with coverage report
+npm run test:coverage
+
+# Run tests with UI (interactive mode)
+npm run test:ui
+```
+
 ## Usage
 
 1. **Sign In** - Use your Google account for secure authentication
-2. **Add Expenses** - Click "Add Expense" to manually enter expense details or upload receipt files
-3. **Receipt Upload** - Drag and drop or select receipt images/PDFs for automatic data extraction
-4. **Bulk Upload** - Upload multiple receipts at once for efficient data entry
-5. **Manage Expenses** - Use action buttons to edit, duplicate, or delete expenses
-6. **Track Reimbursements** - Toggle reimbursement status with one click
-7. **Filter & View** - Use filters to view all, reimbursed, or pending expenses
-8. **Monitor Totals** - Check summary cards and monthly breakdowns for financial insights
-
-## Receipt Processing
-
-The application includes intelligent receipt parsing capabilities:
-
-- **Supported Formats**: JPG, PNG, WebP images and PDF files (max 10MB each)
-- **Drag & Drop**: Intuitive drag-and-drop interface for file uploads
-- **Automatic Extraction**: Automatically extracts merchant name, amount, date, and category from UberEats receipts
-- **Bulk Processing**: Upload multiple receipts simultaneously for batch processing
-- **Smart Parsing**: Uses PDF.js for client-side PDF text extraction and pattern matching
-- **Fallback Handling**: Manual form completion when automatic parsing fails
-- **Duplicate Detection**: Prevents duplicate file uploads
+2. **Add Expenses** - Manually enter expense details or upload PDF receipt files (up to 10MB)
+3. **Smart Receipt Processing** - Automatic extraction of merchant name, amount, date, and category from UberEats and DoorDash receipts with fallback to manual entry
+4. **Bulk Operations** - Upload multiple receipts simultaneously or duplicate existing expenses
+5. **Track Reimbursements** - Toggle individual expenses or use smart matching to find optimal combinations that match your reimbursement amounts
+6. **Filter & Monitor** - Use filters to view expenses by status and check real-time summary cards with monthly breakdowns
 
 ## Technologies Used
 
@@ -103,6 +106,8 @@ The application includes intelligent receipt parsing capabilities:
   - Firestore - NoSQL database with real-time synchronization
   - Authentication - Google OAuth integration
 - **Vite** - Fast build tool and development server
+- **Vitest** - Fast unit test framework with native ESM support
+- **React Testing Library** - Simple and complete testing utilities
 - **PDF.js** - Client-side PDF parsing for receipt processing
 - **React Hot Toast** - User-friendly notifications
 - **Lucide React** - Modern icon library
@@ -112,23 +117,35 @@ The application includes intelligent receipt parsing capabilities:
 
 ```
 src/
-├── components/          # React components
-│   ├── AuthScreen.tsx   # Google authentication screen
-│   ├── ExpenseForm.tsx  # Add/edit expense form with receipt upload
-│   ├── ExpenseList.tsx  # Expense list with actions (edit, delete, duplicate)
-│   ├── FilterBar.tsx    # Reimbursement status filter controls
-│   ├── Header.tsx       # Application header with user info
-│   └── SummaryCards.tsx # Financial summary dashboard
-├── hooks/               # Custom React hooks
-│   ├── useAuth.ts       # Firebase authentication hook
-│   └── useExpenses.ts   # Expense data management hook
-├── types/               # TypeScript type definitions
-│   └── expense.ts       # Expense and form data interfaces
-├── utils/               # Utility functions
-│   ├── expenseUtils.ts  # Currency formatting and grouping utilities
-│   └── receiptParser.ts # PDF/image receipt parsing with PDF.js
-├── config/              # Configuration files
-│   └── firebase.ts      # Firebase initialization
-├── App.tsx              # Main application component
-└── main.tsx             # Application entry point
+├── components/                    # React components
+│   ├── AuthScreen.tsx            # Google authentication screen
+│   ├── EmptyState.tsx            # Empty state with contextual messaging
+│   ├── ExpenseForm.tsx           # Add/edit expense form with receipt upload
+│   ├── ExpenseList.tsx           # Expense list with actions (edit, delete, duplicate)
+│   ├── ExpenseTableRow.tsx       # Individual expense row component
+│   ├── FilterBar.tsx             # Reimbursement status filter controls
+│   ├── Header.tsx                # Application header with user info
+│   ├── LoadingSpinner.tsx        # Loading state component
+│   ├── ReimbursementModal.tsx    # Smart reimbursement matching interface
+│   └── SummaryCards.tsx          # Financial summary dashboard
+├── hooks/                        # Custom React hooks
+│   ├── useAuth.ts                # Firebase authentication hook
+│   ├── useExpenses.ts            # Expense data management hook
+│   └── useMediaQuery.ts          # Responsive design hook
+├── types/                        # TypeScript type definitions
+│   └── expense.ts                # Expense and form data interfaces
+├── utils/                        # Utility functions
+│   ├── baseReceiptParser.ts      # Base class for receipt parsing
+│   ├── doorDashParser.ts         # DoorDash-specific receipt parsing
+│   ├── expenseUtils.ts           # Currency formatting and grouping utilities
+│   ├── parsingLogger.ts          # Receipt parsing logging utilities
+│   ├── receiptParser.ts          # Main receipt parsing orchestrator
+│   ├── reimbursementMatcher.ts   # Advanced reimbursement matching algorithm
+│   └── uberEatsParser.ts         # UberEats-specific receipt parsing
+├── test/                         # Test configuration
+│   └── setup.ts                  # Vitest test setup
+├── config/                       # Configuration files
+│   └── firebase.ts               # Firebase initialization
+├── App.tsx                       # Main application component
+└── main.tsx                      # Application entry point
 ```
