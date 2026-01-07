@@ -56,18 +56,19 @@ const ReimbursementModal: React.FC<ReimbursementModalProps> = ({
 
     try {
       await new Promise((resolve) => setTimeout(resolve, 500));
-      const foundMatches = findReimbursementMatches(pendingExpenses, amount);
-      setMatches(foundMatches);
-      setSelectedMatch(foundMatches[0] || null);
+      const result = findReimbursementMatches(pendingExpenses, amount);
+      setMatches(result.matches);
+      setSelectedMatch(result.matches[0] || null);
 
-      if (foundMatches.length === 0) {
+      if (result.matches.length === 0) {
         toast.error("No matching expense combinations found");
       } else {
-        toast.success(
-          `Found ${foundMatches.length} possible match${
-            foundMatches.length > 1 ? "es" : ""
-          }`
-        );
+        const message = result.limitReached
+          ? `Found ${result.matches.length}+ possible matches (showing first ${result.matches.length})`
+          : `Found ${result.matches.length} possible match${
+              result.matches.length > 1 ? "es" : ""
+            }`;
+        toast.success(message);
       }
     } catch (error) {
       console.error("Error finding matches:", error);

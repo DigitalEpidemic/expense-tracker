@@ -32,13 +32,14 @@ describe("reimbursementMatcher", () => {
         createMockExpense("3", 50.0, "Dinner"),
       ];
 
-      const matches = findReimbursementMatches(expenses, 25.5);
+      const result = findReimbursementMatches(expenses, 25.5);
 
-      expect(matches).toHaveLength(1);
-      expect(matches[0].exactMatch).toBe(true);
-      expect(matches[0].expenses).toHaveLength(1);
-      expect(matches[0].expenses[0].description).toBe("Lunch");
-      expect(matches[0].total).toBe(25.5);
+      expect(result.matches).toHaveLength(1);
+      expect(result.matches[0].exactMatch).toBe(true);
+      expect(result.matches[0].expenses).toHaveLength(1);
+      expect(result.matches[0].expenses[0].description).toBe("Lunch");
+      expect(result.matches[0].total).toBe(25.5);
+      expect(result.limitReached).toBe(false);
     });
 
     it("should find exact multiple expense match", () => {
@@ -48,10 +49,10 @@ describe("reimbursementMatcher", () => {
         createMockExpense("3", 50.0, "Dinner"),
       ];
 
-      const matches = findReimbursementMatches(expenses, 41.25); // 25.50 + 15.75
+      const result = findReimbursementMatches(expenses, 41.25); // 25.50 + 15.75
 
-      expect(matches.length).toBeGreaterThan(0);
-      const exactMatch = matches.find((match) => match.exactMatch);
+      expect(result.matches.length).toBeGreaterThan(0);
+      const exactMatch = result.matches.find((match) => match.exactMatch);
       expect(exactMatch).toBeDefined();
       expect(exactMatch?.expenses).toHaveLength(2);
       expect(exactMatch?.total).toBe(41.25);
@@ -63,10 +64,10 @@ describe("reimbursementMatcher", () => {
         createMockExpense("2", 15.75, "Coffee"),
       ];
 
-      const matches = findReimbursementMatches(expenses, 25.5, 0.02);
+      const result = findReimbursementMatches(expenses, 25.5, 0.02);
 
-      expect(matches.length).toBeGreaterThan(0);
-      const closeMatch = matches.find(
+      expect(result.matches.length).toBeGreaterThan(0);
+      const closeMatch = result.matches.find(
         (match) =>
           match.expenses.length === 1 &&
           match.expenses[0].description === "Lunch"
@@ -81,10 +82,10 @@ describe("reimbursementMatcher", () => {
         createMockExpense("2", 25.5, "Coffee", false),
       ];
 
-      const matches = findReimbursementMatches(expenses, 25.5);
+      const result = findReimbursementMatches(expenses, 25.5);
 
-      expect(matches).toHaveLength(1);
-      expect(matches[0].expenses[0].description).toBe("Coffee");
+      expect(result.matches).toHaveLength(1);
+      expect(result.matches[0].expenses[0].description).toBe("Coffee");
     });
 
     it("should return empty array when no matches found", () => {
@@ -93,9 +94,9 @@ describe("reimbursementMatcher", () => {
         createMockExpense("2", 20.0, "Lunch"),
       ];
 
-      const matches = findReimbursementMatches(expenses, 100.0);
+      const result = findReimbursementMatches(expenses, 100.0);
 
-      expect(matches).toHaveLength(0);
+      expect(result.matches).toHaveLength(0);
     });
 
     it("should sort matches with exact matches first", () => {
@@ -106,16 +107,16 @@ describe("reimbursementMatcher", () => {
         createMockExpense("4", 15.0, "Drink"), // exact match when combined with snack
       ];
 
-      const matches = findReimbursementMatches(expenses, 25.0, 0.02);
+      const result = findReimbursementMatches(expenses, 25.0, 0.02);
 
-      expect(matches.length).toBeGreaterThan(0);
+      expect(result.matches.length).toBeGreaterThan(0);
       // First match should be exact
-      expect(matches[0].exactMatch).toBe(true);
+      expect(result.matches[0].exactMatch).toBe(true);
     });
 
     it("should handle empty expense list", () => {
-      const matches = findReimbursementMatches([], 25.0);
-      expect(matches).toHaveLength(0);
+      const result = findReimbursementMatches([], 25.0);
+      expect(result.matches).toHaveLength(0);
     });
 
     it("should limit combinations to reasonable size", () => {
@@ -124,10 +125,10 @@ describe("reimbursementMatcher", () => {
         createMockExpense(i.toString(), 10 + i, `Expense ${i}`)
       );
 
-      const matches = findReimbursementMatches(expenses, 100.0);
+      const result = findReimbursementMatches(expenses, 100.0);
 
       // Should complete without timeout and return results
-      expect(Array.isArray(matches)).toBe(true);
+      expect(Array.isArray(result.matches)).toBe(true);
     });
 
     it("should handle many expenses with same amount efficiently", () => {
@@ -137,18 +138,18 @@ describe("reimbursementMatcher", () => {
       );
 
       const startTime = Date.now();
-      const matches = findReimbursementMatches(expenses, 100.0); // 4 * 25.0
+      const result = findReimbursementMatches(expenses, 100.0); // 4 * 25.0
       const endTime = Date.now();
 
       // Should complete quickly (less than 1 second)
       expect(endTime - startTime).toBeLessThan(1000);
 
       // Should find matches without duplicating the same expense
-      expect(Array.isArray(matches)).toBe(true);
-      expect(matches.length).toBeGreaterThan(0);
+      expect(Array.isArray(result.matches)).toBe(true);
+      expect(result.matches.length).toBeGreaterThan(0);
 
       // Verify no match uses the same expense twice
-      matches.forEach((match) => {
+      result.matches.forEach((match) => {
         const expenseIds = match.expenses.map((e) => e.id);
         const uniqueIds = new Set(expenseIds);
         expect(uniqueIds.size).toBe(expenseIds.length);
@@ -161,10 +162,10 @@ describe("reimbursementMatcher", () => {
         createMockExpense(i.toString(), 5 + i, `Expense ${i}`)
       );
 
-      const matches = findReimbursementMatches(expenses, 50.0);
+      const result = findReimbursementMatches(expenses, 50.0);
 
       // Should not return excessive number of matches
-      expect(matches.length).toBeLessThanOrEqual(100);
+      expect(result.matches.length).toBeLessThanOrEqual(100);
     });
 
     it("should return multiple valid combinations for same amounts", () => {
@@ -176,21 +177,21 @@ describe("reimbursementMatcher", () => {
         createMockExpense("4", 10.0, "Coffee D", false, "2025-01-04"),
       ];
 
-      const matches = findReimbursementMatches(expenses, 20.0);
+      const result = findReimbursementMatches(expenses, 20.0);
 
       // Should find multiple combinations (limited by performance constraints)
-      expect(matches.length).toBeGreaterThan(1);
-      expect(matches.length).toBeLessThanOrEqual(10); // Respects the limit
+      expect(result.matches.length).toBeGreaterThan(1);
+      expect(result.matches.length).toBeLessThanOrEqual(10); // Respects the limit
 
       // All should be exact matches
-      matches.forEach((match) => {
+      result.matches.forEach((match) => {
         expect(match.exactMatch).toBe(true);
         expect(match.expenses.length).toBe(2);
         expect(match.total).toBe(20.0);
       });
 
       // Verify all combinations are unique (no duplicate expense IDs in any match)
-      const combinations = matches.map((match) =>
+      const combinations = result.matches.map((match) =>
         match.expenses
           .map((e) => e.id)
           .sort()
@@ -207,12 +208,12 @@ describe("reimbursementMatcher", () => {
         createMockExpense("3", 25.0, "Very Old Lunch", false, "2025-01-05"),
       ];
 
-      const matches = findReimbursementMatches(expenses, 25.0);
+      const result = findReimbursementMatches(expenses, 25.0);
 
-      expect(matches.length).toBeGreaterThan(0);
+      expect(result.matches.length).toBeGreaterThan(0);
       // Should match the oldest expense first
-      expect(matches[0].expenses[0].description).toBe("Very Old Lunch");
-      expect(matches[0].expenses[0].date).toBe("2025-01-05");
+      expect(result.matches[0].expenses[0].description).toBe("Very Old Lunch");
+      expect(result.matches[0].expenses[0].date).toBe("2025-01-05");
     });
 
     it("should prioritize oldest expenses in multi-expense matches", () => {
@@ -223,10 +224,10 @@ describe("reimbursementMatcher", () => {
         createMockExpense("4", 10.0, "Recent Snack", false, "2025-01-18"),
       ];
 
-      const matches = findReimbursementMatches(expenses, 25.0); // Looking for 25.0 (15 + 10)
+      const result = findReimbursementMatches(expenses, 25.0); // Looking for 25.0 (15 + 10)
 
-      expect(matches.length).toBeGreaterThan(0);
-      const exactMatch = matches.find((match) => match.exactMatch);
+      expect(result.matches.length).toBeGreaterThan(0);
+      const exactMatch = result.matches.find((match) => match.exactMatch);
       expect(exactMatch).toBeDefined();
 
       // Should prioritize the combination with oldest expenses
@@ -244,16 +245,16 @@ describe("reimbursementMatcher", () => {
         createMockExpense("5", 15.0, "Dinner", false, "2025-01-05"),
       ];
 
-      const matches = findReimbursementMatches(expenses, 20.0);
+      const result = findReimbursementMatches(expenses, 20.0);
 
-      expect(matches.length).toBeGreaterThan(1);
+      expect(result.matches.length).toBeGreaterThan(1);
 
       // Should find various combinations: 5+15, 10+10, etc.
-      const totals = matches.map((match) => match.total);
+      const totals = result.matches.map((match) => match.total);
       expect(totals.every((total) => total === 20.0)).toBe(true);
 
       // Should have different combination sizes
-      const sizes = matches.map((match) => match.expenses.length);
+      const sizes = result.matches.map((match) => match.expenses.length);
       expect(new Set(sizes).size).toBeGreaterThan(1);
     });
 
@@ -265,16 +266,16 @@ describe("reimbursementMatcher", () => {
         createMockExpense("4", 12.49, "Almost half", false, "2025-01-04"),
       ];
 
-      const matches = findReimbursementMatches(expenses, 25.0, 0.02);
+      const result = findReimbursementMatches(expenses, 25.0, 0.02);
 
       // Should find close matches within tolerance
-      expect(matches.length).toBeGreaterThan(0);
+      expect(result.matches.length).toBeGreaterThan(0);
 
-      const closeMatches = matches.filter((match) => !match.exactMatch);
+      const closeMatches = result.matches.filter((match) => !match.exactMatch);
       expect(closeMatches.length).toBeGreaterThan(0);
 
       // All matches should be within tolerance
-      matches.forEach((match) => {
+      result.matches.forEach((match) => {
         const difference = Math.abs(match.total - 25.0);
         expect(difference).toBeLessThanOrEqual(0.02);
       });
@@ -286,10 +287,10 @@ describe("reimbursementMatcher", () => {
         createMockExpense(i.toString(), 1.0, `Dollar ${i}`)
       );
 
-      const matches = findReimbursementMatches(expenses, 12.0);
+      const result = findReimbursementMatches(expenses, 12.0);
 
       // Should not create combinations larger than MAX_COMBINATION_SIZE (10)
-      matches.forEach((match) => {
+      result.matches.forEach((match) => {
         expect(match.expenses.length).toBeLessThanOrEqual(10);
       });
     });
@@ -300,11 +301,11 @@ describe("reimbursementMatcher", () => {
         createMockExpense("2", 0.0, "Zero expense"), // Edge case
       ];
 
-      const matches = findReimbursementMatches(expenses, 10.0);
+      const result = findReimbursementMatches(expenses, 10.0);
 
       // Should find at least one match with the 10.0 expense
-      expect(matches.length).toBeGreaterThanOrEqual(1);
-      const validMatch = matches.find((match) =>
+      expect(result.matches.length).toBeGreaterThanOrEqual(1);
+      const validMatch = result.matches.find((match) =>
         match.expenses.some((e) => e.amount === 10.0)
       );
       expect(validMatch).toBeDefined();
@@ -316,11 +317,11 @@ describe("reimbursementMatcher", () => {
         createMockExpense("2", -5.0, "Refund"), // Edge case
       ];
 
-      const matches = findReimbursementMatches(expenses, 10.0);
+      const result = findReimbursementMatches(expenses, 10.0);
 
       // Should still find the positive amount match
-      expect(matches.length).toBeGreaterThanOrEqual(1);
-      const positiveMatch = matches.find(
+      expect(result.matches.length).toBeGreaterThanOrEqual(1);
+      const positiveMatch = result.matches.find(
         (match) =>
           match.expenses.length === 1 && match.expenses[0].amount === 10.0
       );
@@ -333,10 +334,10 @@ describe("reimbursementMatcher", () => {
         createMockExpense("2", 24.9, "Also too far", false, "2025-01-02"),
       ];
 
-      const matches = findReimbursementMatches(expenses, 25.0, 0.05);
+      const result = findReimbursementMatches(expenses, 25.0, 0.05);
 
       // Should not find matches with such tight tolerance
-      expect(matches.length).toBe(0);
+      expect(result.matches.length).toBe(0);
     });
 
     it("should handle very large tolerance", () => {
@@ -345,11 +346,11 @@ describe("reimbursementMatcher", () => {
         createMockExpense("2", 30.0, "High", false, "2025-01-02"),
       ];
 
-      const matches = findReimbursementMatches(expenses, 25.0, 10.0);
+      const result = findReimbursementMatches(expenses, 25.0, 10.0);
 
       // Should find both matches with large tolerance
-      expect(matches.length).toBe(2);
-      matches.forEach((match) => {
+      expect(result.matches.length).toBe(2);
+      result.matches.forEach((match) => {
         expect(match.exactMatch).toBe(false); // Neither is exact
       });
     });
@@ -361,17 +362,17 @@ describe("reimbursementMatcher", () => {
         createMockExpense("3", 25.01, "Also close", false, "2025-01-03"),
       ];
 
-      const matches = findReimbursementMatches(expenses, 25.0, 0.02);
+      const result = findReimbursementMatches(expenses, 25.0, 0.02);
 
-      expect(matches.length).toBe(3);
+      expect(result.matches.length).toBe(3);
 
       // First match should be the exact one
-      expect(matches[0].exactMatch).toBe(true);
-      expect(matches[0].expenses[0].amount).toBe(25.0);
+      expect(result.matches[0].exactMatch).toBe(true);
+      expect(result.matches[0].expenses[0].amount).toBe(25.0);
 
       // Remaining should be close matches, sorted by difference
-      expect(matches[1].exactMatch).toBe(false);
-      expect(matches[2].exactMatch).toBe(false);
+      expect(result.matches[1].exactMatch).toBe(false);
+      expect(result.matches[2].exactMatch).toBe(false);
     });
 
     it("should handle performance with many unique amounts", () => {
@@ -381,12 +382,12 @@ describe("reimbursementMatcher", () => {
       );
 
       const startTime = Date.now();
-      const matches = findReimbursementMatches(expenses, 50.0);
+      const result = findReimbursementMatches(expenses, 50.0);
       const endTime = Date.now();
 
       // Should complete reasonably quickly
       expect(endTime - startTime).toBeLessThan(2000);
-      expect(Array.isArray(matches)).toBe(true);
+      expect(Array.isArray(result.matches)).toBe(true);
     });
 
     it("should respect configuration limits", () => {
@@ -395,10 +396,63 @@ describe("reimbursementMatcher", () => {
         createMockExpense(i.toString(), 2.5, `Same amount ${i}`)
       );
 
-      const matches = findReimbursementMatches(expenses, 10.0); // 4 * 2.5
+      const result = findReimbursementMatches(expenses, 10.0); // 4 * 2.5
 
       // Should respect MAX_TOTAL_MATCHES limit (100)
-      expect(matches.length).toBeLessThanOrEqual(100);
+      expect(result.matches.length).toBeLessThanOrEqual(100);
+    });
+
+    it("should find exact match with 8 different expense amounts", () => {
+      // Simulate the user's scenario: 8 expenses from different months totaling $620.26
+      const expenses = [
+        createMockExpense("1", 75.32, "Jan expense", false, "2025-01-15"),
+        createMockExpense("2", 82.45, "Feb expense", false, "2025-02-10"),
+        createMockExpense("3", 91.18, "Mar expense", false, "2025-03-20"),
+        createMockExpense("4", 68.9, "Apr expense", false, "2025-04-05"),
+        createMockExpense("5", 103.27, "May expense", false, "2025-05-12"),
+        createMockExpense("6", 55.64, "Jun expense", false, "2025-06-18"),
+        createMockExpense("7", 71.25, "Jul expense", false, "2025-07-22"),
+        createMockExpense("8", 72.25, "Aug expense", false, "2025-08-14"),
+      ];
+
+      const targetAmount = 620.26;
+      const result = findReimbursementMatches(expenses, targetAmount);
+
+      // Should find the exact match with all 8 expenses
+      expect(result.matches.length).toBeGreaterThan(0);
+      const exactMatch = result.matches.find((match) => match.exactMatch);
+      expect(exactMatch).toBeDefined();
+      expect(exactMatch?.expenses.length).toBe(8);
+      expect(exactMatch?.total).toBeCloseTo(targetAmount, 2);
+    });
+
+    it("should prioritize matching ALL pending expenses when target equals total", () => {
+      // Create a mix of expenses where the target matches the total of all pending expenses
+      const expenses = [
+        createMockExpense("1", 25.5, "Expense 1", false, "2025-01-01"),
+        createMockExpense("2", 30.75, "Expense 2", false, "2025-01-02"),
+        createMockExpense("3", 15.0, "Expense 3", false, "2025-01-03"),
+        createMockExpense("4", 8.75, "Expense 4", false, "2025-01-04"),
+      ];
+
+      const totalPending = 80.0; // Sum of all expenses
+      const result = findReimbursementMatches(expenses, totalPending);
+
+      // Should find matches
+      expect(result.matches.length).toBeGreaterThan(0);
+
+      // First match should be ALL expenses
+      expect(result.matches[0].expenses.length).toBe(4);
+      expect(result.matches[0].total).toBe(80.0);
+      expect(result.matches[0].exactMatch).toBe(true);
+
+      // Verify it includes all expense IDs
+      const matchIds = new Set(result.matches[0].expenses.map((e) => e.id));
+      expect(matchIds.size).toBe(4);
+      expect(matchIds.has("1")).toBe(true);
+      expect(matchIds.has("2")).toBe(true);
+      expect(matchIds.has("3")).toBe(true);
+      expect(matchIds.has("4")).toBe(true);
     });
   });
 

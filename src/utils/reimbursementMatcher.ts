@@ -11,18 +11,39 @@ export interface ReimbursementMatch {
   exactMatch: boolean;
 }
 
+export interface ReimbursementResult {
+  matches: ReimbursementMatch[];
+  limitReached: boolean;
+  totalPossibleMatches?: number;
+}
+
 export const findReimbursementMatches = (
   pendingExpenses: Expense[],
   targetAmount: number,
   tolerance: number = 0.01
-): ReimbursementMatch[] => {
+): ReimbursementResult => {
   const matches: ReimbursementMatch[] = [];
+  let limitReached = false;
   const expenses = pendingExpenses
     .filter((expense) => !expense.reimbursed)
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   if (expenses.length === 0) {
-    return matches;
+    return { matches, limitReached };
+  }
+
+  // Special case: if target amount matches total of ALL pending expenses, return that as first match
+  const totalPending = expenses.reduce(
+    (sum, expense) => sum + expense.amount,
+    0
+  );
+  const totalDifference = Math.abs(totalPending - targetAmount);
+  if (totalDifference <= tolerance) {
+    matches.push({
+      expenses: [...expenses],
+      total: totalPending,
+      exactMatch: totalDifference < 0.001,
+    });
   }
 
   // Group expenses by amount to avoid duplicate work
@@ -54,7 +75,10 @@ export const findReimbursementMatches = (
       remainingSize: number
     ) => {
       // Early termination if we have enough matches
-      if (results.length >= MAX_TOTAL_MATCHES) return;
+      if (results.length >= MAX_TOTAL_MATCHES) {
+        limitReached = true;
+        return;
+      }
 
       // Check if current combination is within tolerance
       const difference = Math.abs(currentSum - target);
@@ -197,12 +221,18 @@ export const findReimbursementMatches = (
   };
 
   for (const amountCombo of amountCombinations) {
-    if (matches.length >= MAX_TOTAL_MATCHES) break; // Early termination
+    if (matches.length >= MAX_TOTAL_MATCHES) {
+      limitReached = true;
+      break;
+    }
 
     const expenseCombinations = generateExpenseCombinations(amountCombo);
 
     for (const expenseCombination of expenseCombinations) {
-      if (matches.length >= MAX_TOTAL_MATCHES) break; // Early termination
+      if (matches.length >= MAX_TOTAL_MATCHES) {
+        limitReached = true;
+        break;
+      }
 
       const total = expenseCombination.reduce(
         (sum, expense) => sum + expense.amount,
@@ -230,7 +260,7 @@ export const findReimbursementMatches = (
     });
   });
 
-  return uniqueMatches.sort((a, b) => {
+  const sortedMatches = uniqueMatches.sort((a, b) => {
     if (a.exactMatch && !b.exactMatch) return -1;
     if (!a.exactMatch && b.exactMatch) return 1;
 
@@ -238,6 +268,11 @@ export const findReimbursementMatches = (
     const diffB = Math.abs(b.total - targetAmount);
     return diffA - diffB;
   });
+
+  return {
+    matches: sortedMatches,
+    limitReached,
+  };
 };
 
 export const formatMatchSummary = (match: ReimbursementMatch): string => {
