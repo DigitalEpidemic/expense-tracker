@@ -161,7 +161,7 @@ describe("receiptParser", () => {
 
       // Should set worker src
       expect(pdfjsLib.GlobalWorkerOptions.workerSrc).toContain(
-        "pdf.worker.mjs"
+        "pdf.worker.mjs",
       );
     });
 
@@ -553,7 +553,7 @@ describe("receiptParser", () => {
       };
 
       vi.mocked(pdfjsLib.getDocument).mockResolvedValue(
-        mockPdf as unknown as pdfjsLib.PDFDocumentLoadingTask
+        mockPdf as unknown as pdfjsLib.PDFDocumentLoadingTask,
       );
 
       const result = await parseReceiptFile(mockFile);
@@ -582,7 +582,7 @@ describe("receiptParser", () => {
       };
 
       vi.mocked(pdfjsLib.getDocument).mockResolvedValue(
-        mockPdf as unknown as pdfjsLib.PDFDocumentLoadingTask
+        mockPdf as unknown as pdfjsLib.PDFDocumentLoadingTask,
       );
 
       const result = await parseReceiptFile(mockFile);
@@ -605,7 +605,7 @@ describe("receiptParser", () => {
       };
 
       vi.mocked(pdfjsLib.getDocument).mockResolvedValue(
-        mockPdf as unknown as pdfjsLib.PDFDocumentLoadingTask
+        mockPdf as unknown as pdfjsLib.PDFDocumentLoadingTask,
       );
 
       const result = await parseReceiptFile(mockFile);
@@ -635,7 +635,7 @@ describe("receiptParser", () => {
       };
 
       vi.mocked(pdfjsLib.getDocument).mockResolvedValue(
-        mockPdf as unknown as pdfjsLib.PDFDocumentLoadingTask
+        mockPdf as unknown as pdfjsLib.PDFDocumentLoadingTask,
       );
 
       const result = await parseReceiptFile(mockFile);
@@ -689,7 +689,7 @@ describe("receiptParser", () => {
         // and logging the error (testing lines 272-274: console.error and return null)
         expect(consoleErrorSpy).toHaveBeenCalledWith(
           "Error parsing receipt:",
-          expect.any(Error)
+          expect.any(Error),
         );
 
         // Should return null when parsing fails at the top level
@@ -869,20 +869,20 @@ describe("receiptParser", () => {
     describe("canParse", () => {
       it("should identify DoorDash in text content", () => {
         expect(
-          parser.canParse("DoorDash Order Confirmation", "receipt.pdf")
+          parser.canParse("DoorDash Order Confirmation", "receipt.pdf"),
         ).toBe(true);
         expect(parser.canParse("Order from Door Dash", "receipt.pdf")).toBe(
-          true
+          true,
         );
         expect(parser.canParse("doordash delivery", "receipt.pdf")).toBe(true);
       });
 
       it("should identify DoorDash in filename", () => {
         expect(parser.canParse("Generic receipt", "doordash_receipt.pdf")).toBe(
-          true
+          true,
         );
         expect(parser.canParse("Generic receipt", "DoorDash_Order.pdf")).toBe(
-          true
+          true,
         );
       });
 
@@ -899,7 +899,7 @@ describe("receiptParser", () => {
         const parser = new DoorDashReceiptParser();
         const result = parser.parse(
           mockFile,
-          "DoorDash Food Delivery - Order History.pdf"
+          "DoorDash Food Delivery - Order History.pdf",
         );
 
         expect(result).not.toBeNull();
@@ -916,7 +916,7 @@ describe("receiptParser", () => {
         const parser = new DoorDashReceiptParser();
         const result = parser.parse(
           mockFile,
-          "Mail - Jeff Polasz - Outlook.pdf"
+          "Mail - Jeff Polasz - Outlook.pdf",
         );
 
         expect(result).not.toBeNull();
@@ -948,7 +948,7 @@ describe("receiptParser", () => {
         expect(result).toBeNull();
         expect(consoleSpy).toHaveBeenCalledWith(
           "Error parsing DoorDash text:",
-          expect.any(Error)
+          expect.any(Error),
         );
 
         consoleSpy.mockRestore();
@@ -1004,23 +1004,23 @@ describe("receiptParser", () => {
         expect(
           parser.canParse(
             "Here's your receipt from Restaurant and Uber Eats",
-            "receipt.pdf"
-          )
+            "receipt.pdf",
+          ),
         ).toBe(true);
         expect(
-          parser.canParse("UberEats delivery confirmation", "receipt.pdf")
+          parser.canParse("UberEats delivery confirmation", "receipt.pdf"),
         ).toBe(true);
         expect(parser.canParse("ubereats order receipt", "receipt.pdf")).toBe(
-          true
+          true,
         );
       });
 
       it("should identify UberEats filename patterns", () => {
         expect(parser.canParse("Generic receipt", "ubereats_receipt.pdf")).toBe(
-          true
+          true,
         );
         expect(
-          parser.canParse("Generic receipt", "Receipt_15Jan2024.pdf")
+          parser.canParse("Generic receipt", "Receipt_15Jan2024.pdf"),
         ).toBe(true);
       });
 
@@ -1028,14 +1028,14 @@ describe("receiptParser", () => {
         expect(
           parser.canParse(
             "You ordered from Restaurant Total $15.00",
-            "receipt.pdf"
-          )
+            "receipt.pdf",
+          ),
         ).toBe(true);
         expect(
           parser.canParse(
             "Here's your receipt from Restaurant Total $20.00",
-            "receipt.pdf"
-          )
+            "receipt.pdf",
+          ),
         ).toBe(true);
       });
 
@@ -1060,6 +1060,18 @@ describe("receiptParser", () => {
         expect(result?.confidence).toBeGreaterThanOrEqual(0.3);
       });
 
+      it("should parse UberEats tip receipt using 'receipt for' format", () => {
+        const mockFile = `Jun 26, 2026 12:02 p.m. Tip Thanks for tipping, Jeffrey Here's your receipt for Jersey Mike's Subs (589 Fairway Rd S). Total $25.09 1 #8 Club Sub $15.94 Regular, Bacon, Olive Oil Blend, Red Wine Vinegar, Mayo, Oregano, Salt, Lettuce, Tomatoes, Onions, White Bread Item Subtotal $15.94 Tax $2.66 Delivery Fee $1.99 Service Fee $2.50 Tip $2.00 Payments Visa ••••3767 (Simplii Visa) $25.09 6/26/26 2:26 p.m.`;
+
+        const result = parser.parse(mockFile, "Receipt_26Jun2026_182705.pdf");
+
+        expect(result).not.toBeNull();
+        expect(result?.description).toBe("Jersey Mike's Subs");
+        expect(result?.amount).toBe("25.09");
+        expect(result?.date).toBe("2026-06-26");
+        expect(result?.category).toBe("Food & Dining");
+      });
+
       it("should return null when amount not found", () => {
         const text =
           "You ordered from Restaurant\nJanuary 15, 2024\nNo total amount here";
@@ -1081,7 +1093,7 @@ describe("receiptParser", () => {
         expect(result).toBeNull();
         expect(consoleSpy).toHaveBeenCalledWith(
           "Error parsing UberEats text:",
-          expect.any(Error)
+          expect.any(Error),
         );
 
         consoleSpy.mockRestore();

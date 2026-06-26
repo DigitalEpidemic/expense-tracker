@@ -15,6 +15,7 @@ export const UBER_EATS_PATTERNS = {
     /Amount\s+Charged\s*\$(\d+\.\d{2})/i,
   ],
   restaurantLocationPatterns: [
+    /Here's your receipt for (.+?)(?:\.|$)/i,
     /Here's your receipt from (.+?) and Uber Eats/i,
     /receipt from (.+?) and Uber Eats/i,
     /You ordered from (.+?)(?:\s+Picked up|\s*$)/i,
@@ -69,19 +70,19 @@ export class UberEatsReceiptParser extends BaseReceiptParser {
     return this.parseWithErrorHandling(text, fileName, (text, fileName) => {
       const amount = this.extractAmountFromText(
         text,
-        UBER_EATS_PATTERNS.totalPatterns
+        UBER_EATS_PATTERNS.totalPatterns,
       );
 
       const description = this.extractVendorName(
         text,
         UBER_EATS_PATTERNS.restaurantLocationPatterns,
-        "UberEats Order"
+        "UberEats Order",
       );
 
       const date = this.getDateFromTextOrFileName(
         text,
         fileName,
-        UBER_EATS_PATTERNS.datePatterns
+        UBER_EATS_PATTERNS.datePatterns,
       );
 
       return this.validateAndCreateResult(description, amount, date);
